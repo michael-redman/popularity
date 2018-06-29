@@ -1,0 +1,20 @@
+drop function if exists import_upsert(char(40),text);
+create or replace function
+	import_upsert
+	(_hash char(40), _path text)
+	returns void
+	as	$TEXT$
+		<<block0>>
+		declare old_path text;
+		begin	update pool set path=null where path=_path and hash<>_hash;
+			select path into old_path from pool where hash=_hash;
+			if	not found then
+				insert into pool values(_hash,0,now(),_path);
+				else	if	_path<>old_path then
+						update pool set path=_path where hash=_hash;
+						end if;
+				end if;
+		end;
+		$TEXT$
+	language plpgsql;
+--IN GOD WE TRVST.

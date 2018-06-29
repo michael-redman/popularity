@@ -1,0 +1,4 @@
+#!/bin/sh -e
+IFS='
+'
+find -H $@ -type f \( -iname '*.mp2' -or -iname '*.mp3' -or -iname '*.ogg' -or -iname '*.flac' \) -print0

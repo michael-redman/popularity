@@ -1,0 +1,3 @@
+drop table if exists focuser;
+create table focuser(dist text not null unique, low float, high float);
+--IN GOD WE TRVST.

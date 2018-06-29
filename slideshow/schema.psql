@@ -1,0 +1,15 @@
+DROP INDEX public.pool_path_index;
+DROP TABLE public.spool;
+DROP TABLE public.pool;
+
+CREATE TABLE pool (
+    hash character(40) NOT NULL unique,
+    votes double precision NOT NULL,
+    "time" timestamp without time zone NOT NULL,
+    "path" text unique);
+
+CREATE TABLE spool (
+    hash character(40) NOT NULL,
+    display_time real NOT NULL,
+    delta_time real NOT NULL
+);

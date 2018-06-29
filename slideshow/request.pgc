@@ -1,0 +1,39 @@
+EXEC SQL WHENEVER SQLERROR SQLPRINT;
+EXEC SQL WHENEVER SQLWARNING SQLPRINT;
+
+#include <limits.h>
+#include <openssl/sha.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <popularity.h>
+
+#include "enspool.h"
+
+extern void fetch_counts_ecpg(unsigned int *, unsigned int *);
+
+int main(int argc, char ** argv){
+unsigned int pool_count,spool_count;
+size_t path_len=0;
+EXEC SQL BEGIN DECLARE SECTION;
+int count;
+char *path=NULL, hash[2*SHA_DIGEST_LENGTH+1], * db=argv[1];
+EXEC SQL END DECLARE SECTION;
+EXEC SQL CONNECT TO :db;
+while(!feof(stdin)){
+	if (getdelim(&path,&path_len,'\0',stdin)==-1) break;
+	EXEC SQL SELECT COUNT(*) INTO :count FROM pool WHERE PATH=:path;
+	if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
+	if(count!=1){
+		fprintf(stderr,"warning: unknown or ambiguous path: %s\n",path);
+		continue; }
+	EXEC SQL SELECT HASH INTO :hash FROM pool WHERE PATH=:path;
+	if(sqlca.sqlcode<0) exit(EXIT_FAILURE);
+	fetch_counts_ecpg(&pool_count,&spool_count);
+	enspool(hash,random_time(pool_count,spool_count),0); }
+free(path);
+if(ferror(stdin)||fclose(stdin)){ perror("stdin:"); exit(EXIT_FAILURE); }
+EXEC SQL DISCONNECT;
+return 0; }
+
+/*IN GOD WE TRVST.*/

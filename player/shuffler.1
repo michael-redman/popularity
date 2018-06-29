@@ -1,0 +1,18 @@
+.TH POPULARITY_IMPORT 1
+.SH NAME
+popularity_shuffler \- Audio and video shuffler for Popularity adaptive entertainment system
+.SH SYNOPSIS
+popularity_shuffler [ -h db_host ] [ -U db_username ] db_name
+.SH EXAMPLE
+popularity_shuffler -h yourbusiness.popularity.life -U you yourbusiness
+.SH DESCRIPTION
+popularity_shuffler starts playing audio or video using the database information you supply.
+.PP
+You must first have imported music or video into the database with popularity_import(1), and then built a probability distribution file with popularity_rebalance(1).
+.SH "SEE ALSO"
+popularity-player(7), popularity_rebalance(1), popularity_clear_dead_paths(1), popularity_print_new_paths(1)
+.SH COPYRIGHT
+Copyright 2017 Michael Redman <michael.redman.4@gmail.com>
+.br
+GPL License
+.SH IN GOD WE TRVST.

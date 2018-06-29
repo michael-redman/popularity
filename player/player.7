@@ -1,0 +1,34 @@
+.TH POPULARITY-PLAYER 7
+.SH NAME
+popularity-player \- Audio and video player module for Popularity adaptive entertainment shuffler
+.SH DESCRIPTION
+.B popularity-player
+contains the program units necessary to shuffle audio and video with Popularity.
+.SH DATABASE SETUP
+Popularity commercial customers should skip this step and use the database credentials provided to them.
+.PP
+Popularity free/home users (no Cygwin support yet due to issues with the way the control FIFO was implemented) need to run run \fBpopularity_player_init_db\fR to set up the database before importing any media.
+.SH USE
+If you are not already familiar with how to import files using \fBpopularity_import\fR, see the \fBpopularity_import\fR(1) manual page. You need to tell Popularity what files you want to work with before it can play them.
+.PP
+Once you have imported some media, run \fBpopularity_rebalance\fR to create a probability distribution cache file. See the \fBpopularity_rebalance\fR(1) manual page for further information.
+.PP
+Once you have run \fBpopularity_rebalance\fR, you are ready to play music with \fBpopularity_shuffler\fR. See the \fBpopularity_shuffler\fR manual page for further information.
+.SH TUNABLE PARAMETERS
+The "dictionary" database table holds some configurable parameteters that affect the way Popularity behaves. You can modify them with normal SQL UPDATE commands. The variables are:
+.TP
+\fBdown_votes_to_kill\fR - how many down votes before play of a song is aborted (default 3)
+.TP
+\fBreplay_delay\fR - how long, in seconds, before the end of a song, before it will be played again (default 3600)
+.TP
+\fBweb_voting_password\fR - username for web voting (commercial users only)
+.TP
+\fBweb_voting_username\fR - username for web voting (commercial users only)
+.SH "SEE ALSO"
+popularity(7), popularity_player_init_db(1), popularity_import(1), popularity_rebalance(1), popularity_clear_dead_paths(1), popularity_print_new_paths(1)
+
+.SH AUTHOR
+
+Michael Redman <michael.redman.4@gmail.com>
+
+.SH IN GOD WE TRVST.

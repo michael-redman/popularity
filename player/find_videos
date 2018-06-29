@@ -1,0 +1,12 @@
+#!/bin/sh -e
+IFS='
+'
+find -H $@ -type f \( \
+	-iname '*.avi' \
+	-or -iname '*.flv' \
+	-or -iname '*.mkv' \
+	-or -iname '*.mpg' \
+	-or -iname '*.mov' \
+	-or -iname '*.vob' \
+	-or -iname '*.mp4' \
+	-or -iname '*.wmv' \) -print0

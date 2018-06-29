@@ -1,0 +1,54 @@
+drop function if exists max_sn1();
+create or replace function max_sn1() returns integer
+	as	$TEXT$
+		<<block0>>
+		declare n integer;
+		declare last integer;
+		declare	popularity double precision;
+		declare mean double precision;
+		declare m2 double precision;
+		declare delta double precision;
+		declare stddev double precision;
+		declare popularities cursor for select pool.votes from pool where path is not null order by votes desc;
+		begin	n=0;
+			last=0;
+			mean=0;
+			m2=0;
+			open popularities;
+			fetch popularities into popularity;
+			if	popularity is null
+				then	close popularities;
+					return 0;
+					end if;
+			n=n+1;
+			if	(popularity>=0)
+				then popularity=ln(1+popularity);
+				else popularity=-ln(1-popularity);
+				end if;
+			delta	=	popularity-mean;
+			mean	=	mean+delta/n;
+			m2	=	m2+delta*delta;
+			loop
+				fetch popularities into popularity;
+				if	popularity is null
+					then exit; end if;
+				n=n+1;
+				if	(popularity>=0)
+					then popularity=ln(1+popularity);
+					else popularity=-ln(1-popularity);
+					end if;
+				delta	=	popularity-mean;
+				mean	=	mean+delta/n;
+				m2	=	m2+delta*delta;
+				stddev	=	sqrt(m2/(n-1));
+ 				--raise notice '%', 'popularity: ' || popularity || ' mean ' || mean || ' stddev ' || stddev;
+				if	(stddev>0 and mean/stddev>=1)
+					then last=n;
+					end if;
+				end loop;
+			close popularities;
+			return last;
+		end;
+		$TEXT$
+	language plpgsql;
+--IN GOD WE TRVST.

@@ -1,0 +1,57 @@
+drop table if exists cache;
+create table cache (name text not null unique, value text not null);
+drop function if exists post_delta(char(40),real);
+create or replace function
+	post_delta
+	(hash char(40), delta real)
+	returns void
+	/* eqns approximating decay & votes balanced in "steady state":
+	1 vote = popularity_limit - popularity_limit * e(-age / period) 
+	period = -age / l( (popularity_limit - 1) / popularity_limit )
+	Since we delete bad content over time, consider the range of what the
+	system will "remember" to be from 0 to popularity_limit instead of from
+	-popularity_limit to popularity_limit
+	bits = l(popularity_limit) / l(2)
+	popularity_limit = 2 ^ bits
+	*/
+	as	$TEXT$
+		<<block0>>
+		declare max_amp constant integer := 16777216; -- = 2^24
+			period double precision;
+			average_age double precision;
+			age double precision;
+			popularity double precision;
+		begin	lock table cache;
+			if	not exists
+					(select * from cache
+					where name='period')
+				then	SELECT	AVG(EXTRACT(EPOCH FROM
+						NOW()-TIME))
+						INTO average_age
+						FROM POOL
+						WHERE PATH IS NOT NULL;
+					period =
+						- average_age
+						/ ln( (max_amp-1.0)/max_amp );
+					insert	into cache values
+						('period',period);
+				else	select value into period 
+					from cache where name='period';
+				end if;
+			--raise notice '%', 'avgerage_age: ' || average_age;
+			--raise notice '%', 'period: ' || period;
+			SELECT	pool.votes,
+				EXTRACT(EPOCH FROM NOW()-TIME)
+                		INTO popularity, age FROM pool
+				WHERE pool.hash=post_delta.hash;
+			--raise notice '%', 'popularity: ' || popularity || ' age: ' || age;
+			popularity=popularity*exp(-age/period)+delta;
+			UPDATE pool
+				SET TIME=NOW(),
+				votes=block0.popularity
+				WHERE pool.hash=post_delta.hash;
+			--raise notice '%', 'popularity: ' || popularity;
+		end;
+		$TEXT$
+	language plpgsql;
+--IN GOD WE TRVST.

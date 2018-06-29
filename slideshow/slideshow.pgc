@@ -1,0 +1,231 @@
+EXEC SQL WHENEVER SQLERROR CALL SQLPRINT;
+EXEC SQL WHENEVER SQLWARNING CALL SQLPRINT;
+
+#include <limits.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/wait.h>
+#include <time.h>
+#include <unistd.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+
+#include <popularity.h>
+
+#include "enspool.h"
+#define NSECS_IN_SEC 1000000000
+#define RESOLUTION_NSEC 50000000
+
+#include "at.h"
+#define AT_ERR fputs(AT "\n",stderr);
+
+extern void fetch_counts_ecpg(unsigned int *, unsigned int *);
+
+int despool
+	(	const unsigned int spool_count,
+		char * hash,
+		float * display_time,
+		float * delta_time)
+	{	EXEC SQL BEGIN DECLARE SECTION;
+			float _display_time, _delta_time;
+			unsigned int _spool_count;
+			int ind;
+			char _hash[2*SHA_DIGEST_LENGTH+1],*ctid=NULL;
+			EXEC SQL END DECLARE SECTION;
+			_spool_count=spool_count;
+		EXEC SQL BEGIN;
+		EXEC SQL
+			SELECT CTID INTO :ctid :ind FROM SPOOL
+			OFFSET (FLOOR(RANDOM()*:_spool_count)) LIMIT 1;
+		if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
+		if (ind<0) { EXEC SQL COMMIT; if(ctid) free(ctid); return -1; }
+		EXEC SQL
+			SELECT hash,display_time,delta_time
+			INTO :_hash, :_display_time, :_delta_time
+			FROM SPOOL WHERE CTID=:ctid;
+		if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
+		EXEC SQL DELETE FROM SPOOL WHERE CTID=:ctid;
+		if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
+		EXEC SQL COMMIT;
+		if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
+		free(ctid);
+		strcpy(hash,_hash);
+		*display_time=_display_time; *delta_time=_delta_time;
+		return 0; }
+
+char next
+	(	unsigned int ndists,
+		char const ** const distfiles,
+		char * hash,
+		float * display_time,
+		float * delta_time,
+		char * path)
+	{	EXEC SQL BEGIN DECLARE SECTION;
+		char _hash[2*SHA_DIGEST_LENGTH+1];
+		VARCHAR _path[PATH_MAX];
+		EXEC SQL END DECLARE SECTION;
+		unsigned int pool_count, spool_count;
+		fetch_counts_ecpg(&pool_count,&spool_count);
+		if(random()/(double)RAND_MAX*(pool_count+spool_count*spool_count)<(spool_count*spool_count))
+			if(!despool(spool_count,hash,display_time,delta_time)){
+				strcpy(_hash,hash);
+				EXEC SQL select path into :_path from pool where hash = :_hash;
+				if	(sqlca.sqlcode<0)
+					{	fprintf(
+							stderr,
+							"ERROR: Could not retrieve path for %s\n",
+							_hash);
+						 exit(EXIT_FAILURE); }
+				EXEC SQL COMMIT;
+				if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
+				strcpy(path,_path.arr);
+				return 0; }
+		if	(random_from_distfiles(ndists,distfiles,hash))
+			{ AT_ERR; return 1; }
+		strcpy(_hash,hash);
+		EXEC SQL SELECT PATH INTO :_path FROM pool WHERE hash=:_hash;
+		if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
+		EXEC SQL COMMIT;
+		if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
+		strcpy(path,_path.arr);
+		*display_time=random_time(pool_count,spool_count);
+		*delta_time=0;
+		return 0; }
+
+void handlequeuedevents
+	(
+		Display *d,
+		char * hash,
+		float * display_time,
+		float * delta_time,
+		int * die, int waste)
+	{
+		unsigned int pool_count, spool_count;
+		XEvent e;
+		XKeyEvent k;
+		KeySym ks;
+		XComposeStatus cs;
+		char c[2];
+		float interval;
+		c[1]=0;
+		while	(XPending(d)){
+			XNextEvent(d,&e);
+			k=e.xkey;
+			XLookupString(&k,c,1,&ks,&cs);
+			if(c[0]=='q') *die=1;
+			if(waste) continue;
+			fetch_counts_ecpg(&pool_count, &spool_count);
+			interval=random_time(pool_count,spool_count);
+			switch(c[0]){
+			case '-':
+				//fputs("- event\n",stderr);
+				if	(interval>*display_time)
+					interval=*display_time;
+				*delta_time-=interval;
+				*display_time-=interval;
+				break;
+			case '=':
+				//fputs("+ event\n",stderr);
+				/*if(random()%maxtime>=interval){
+					*display_time+=interval;
+					*delta_time+=interval;
+				}else*/
+				enspool(hash,interval,interval);
+				break;
+			/* case '+': request_from_same_scene(hash); */ }}}
+
+void paint(char * path){
+	struct stat st;
+	int pid,exit_status;
+	static char last_path[PATH_MAX+1]="\0";
+	if	(!strcmp(path,last_path))
+		{	fprintf(stderr,
+				"Not repainting repeated image: %s\n",path);
+			return; }
+	strncpy(last_path,path,PATH_MAX+1);
+	last_path[PATH_MAX]='\0';
+	if(stat(path,&st)){
+		fprintf(stderr,"could not stat %s\n",path);
+		exit(EXIT_FAILURE); }
+	pid=fork();
+	if(pid==-1){
+		fprintf(stderr,"could not fork\n");
+		exit(-1);
+	}else if(!pid) execl(XLI_PATH,XLI_PATH,"-onroot","-fullscreen","-quiet","-at","0,0","-border","black",path,NULL);
+	waitpid(pid,&exit_status,0); }
+
+#define DIE do{ \
+	fprintf(stderr,__FILE__": error at line %u\n",__LINE__); \
+	exit(EXIT_FAILURE); }while(0);
+
+int main(int argc, char** argv){
+	EXEC SQL BEGIN DECLARE SECTION;
+	char * db = argv[1];
+	char hash[2*SHA_DIGEST_LENGTH+1];
+	float delta_time=0;
+	int result, ind;
+	EXEC SQL END DECLARE SECTION;
+	Display * d;
+	Window w;
+	int dieflag=0;
+	float display_time=0;
+	char path[PATH_MAX+1];
+	struct timespec rqt, rmt;
+	if(!(d=XOpenDisplay(NULL))) DIE;
+	w=XCreateSimpleWindow(d,XDefaultRootWindow(d),0,0,4,4,1,0,0xffffff);
+	if
+		(w==BadAlloc || w==BadColor || w==BadCursor || w==BadMatch || w==BadPixmap || w==BadValue || w==BadWindow)
+		DIE;
+	XSetIconName(d,w,"slideshow");
+	if (XMapWindow(d,w)==BadWindow) DIE;
+	if (XSelectInput(d,w,KeyPress)==BadWindow) DIE;
+	
+	EXEC SQL CONNECT TO :db;
+	/* ECPGdebug(1,stderr); */
+	
+	srandom(time(NULL));
+	rqt.tv_sec=0;
+	rqt.tv_nsec=RESOLUTION_NSEC;
+	
+	while(1){
+		if	(next(	argc-2,(char const ** const)&(argv[2]),hash,
+				&display_time,&delta_time,path))
+			{ AT_ERR; return 1; }
+		printf("%g %g %s %s\n",display_time,delta_time,hash,path);
+		paint(path);
+		handlequeuedevents(d,hash, &display_time, &delta_time, &dieflag,1);
+		while (display_time>0) {
+			if	(nanosleep(&rqt,&rmt))
+				{	if	(errno!=EINTR)
+						{ AT_ERR; return 1; }
+					display_time-=(rqt.tv_sec-rmt.tv_sec);
+					display_time-=
+						(float)(rqt.tv_nsec-rmt.tv_nsec)
+						/(float)NSECS_IN_SEC; }
+				else 	display_time-=rqt.tv_sec+(float)rqt.tv_nsec/(float)NSECS_IN_SEC;
+			handlequeuedevents(d,hash, &display_time, &delta_time, &dieflag,0);
+			if(dieflag) goto END; }
+		if	(delta_time!=0)
+			{	EXEC SQL BEGIN;
+				EXEC SQL
+					select post_delta(:hash,:delta_time)
+					into :result :ind;
+				if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
+				EXEC SQL COMMIT;
+				if (sqlca.sqlcode<0) exit(EXIT_FAILURE); }}
+	END:	if(display_time>0) enspool(hash,display_time,delta_time);
+		else if	(delta_time!=0)
+			{	EXEC SQL BEGIN;
+				EXEC SQL
+					select post_delta(:hash,:delta_time)
+					into :result :ind;
+				if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
+				EXEC SQL COMMIT;
+				if (sqlca.sqlcode<0) exit(EXIT_FAILURE); }
+		EXEC SQL DISCONNECT;
+		XCloseDisplay(d);
+		return 0; }

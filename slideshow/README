@@ -1,0 +1,36 @@
+POPULARITY-SLIDESHOW
+
+Still-image slideshow module for popularity, an adaptive music, video, and photo randomplayer for Debian Linux.
+
+
+Installation
+
+Popularity runs on Debian Linux.
+
+Popularity-slideshow depends on popularity-common, which you can clone from github.com/michael-redman
+
+To bulid and install popularity-slideshow:
+
+root@yourhost:~# aptitude install xli libx11-dev
+you@yourhost:/usr/local/src/popularity-slideshow$ make
+root@yourhost:/usr/local/src/popularity-slideshow# make install
+
+
+Use
+
+See the documentation for popularity-common on setting up a database, importing songs, and building probability distribution files.
+
+Popularity-slideshow uses the full-screen root window and is therefore designed for use with window managers that either take up no screen space by default (like 9wm) or can "hide" themselves (like Icewm - use "TaskBarAutoHide=1" in ~/.icewm/preferences).
+
+Start slideshow:
+
+you@yourhost:~$ popularity-slideshow photos@your.db.host.ip flat.dist sharpened.dist
+
+"=" key requests, "-" key skips, "q" quits.
+
+Request arbitrary files by path:
+
+you@yourhost:~$ popularity-find-photos ~/some/dir | popularity-slideshow-request photos@your.db.host.ip
+
+
+IN GOD WE TRVST.

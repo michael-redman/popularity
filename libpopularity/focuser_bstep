@@ -1,0 +1,62 @@
+#!/bin/sh
+
+USE="focuser-bstep [-h host] [-U username] [-v] dbname focuser_name target_nstates"
+
+while	getopts "h:U:v" opt; do
+	case	"$opt" in
+		h)	psql_host_arg="-h $OPTARG"
+			ecpg_host_arg="@$OPTARG" ;;
+		U)	psql_user_arg="-U $OPTARG"
+			ecpg_user_arg="@$OPTARG" ;;
+		v)	inverse=-v;;
+		\?)	echo "$USE" >&2; exit 1;t; esac; done
+if [ $(($#-$OPTIND)) -ne 2 ]; then echo "$USE"; exit 1; fi
+shift $(expr $OPTIND - 1)
+db_name=$1
+libpq_connect_string="`popularity_libpq_connect_string $psql_host_arg $psql_user_arg $db_name`"
+focuser_name=$2
+target_nstates=$3
+target_dir="$HOME/.popularity/$libpq_connect_string"
+mkdir -p "$target_dir"
+
+if	[ "`psql $psql_host_arg $psql_user_arg -Atc \"select count(*) from focuser where dist='$focuser_name'\" $db_name`" -eq 0 ]
+	then	low=1
+		high=2
+		psql $psql_host_arg $psql_user_arg -c "insert into focuser values('$focuser_name',1,2)" $db_name
+	else	limits="`psql $psql_host_arg $psql_user_arg -Atc "select low,high from focuser where dist='$focuser_name'" $db_name`"
+		low=`echo "$limits" | cut -d \| -f 1`
+		high=`echo "$limits" | cut -d \| -f 2`
+		step=`echo "e(.5*l($high/$low))" | bc -l`
+		fi
+step=`echo "e(.5*l($high/$low))" | bc -l`
+midpoint=`echo "e(.5*l($low*$high))" | bc -l`
+popularity_mkdist $inverse /tmp/$$.m "$libpq_connect_string" $midpoint
+nstates=`popularity_entropy /tmp/$$.m | cut -d ' ' -f 3`
+if	[ `echo "$nstates>$target_nstates" | bc -l` -eq 1 ]
+	then	popularity_mkdist $inverse /tmp/$$.h "$libpq_connect_string" $high
+		nstates=`popularity_entropy /tmp/$$.h | cut -d ' ' -f 3`
+		if	[ `echo "$nstates>$target_nstates" | bc -l` -eq 1 ]
+			then	high=`echo "$high*$step" | bc -l`
+				psql $psql_host_arg $psql_user_arg -c "update focuser set high=$high where dist='$focuser_name'" $db_name
+				mv /tmp/$$.h "$target_dir/$focuser_name.dist"
+				rm /tmp/$$.m
+			else	low=$midpoint
+				psql $psql_host_arg $psql_user_arg -c "update focuser set low=$low where dist='$focuser_name'" $db_name
+				mv /tmp/$$.m "$target_dir/$focuser_name.dist"
+				rm /tmp/$$.h
+				fi
+	else	popularity_mkdist $inverse /tmp/$$.l "$libpq_connect_string" $low
+		nstates=`popularity_entropy /tmp/$$.l | cut -d ' ' -f 3`
+		if	[ `echo "$nstates<$target_nstates" | bc -l` -eq 1 ]
+			then	low=`echo "$low/$step" | bc -l`
+				psql $psql_host_arg $psql_user_arg -c "update focuser set low=$low where dist='$focuser_name'" $db_name
+				mv /tmp/$$.l "$target_dir/$focuser_name.dist"
+				rm /tmp/$$.m
+			else	high=$midpoint
+				psql $psql_host_arg $psql_user_arg -c "update focuser set high=$high where dist='$focuser_name'" $db_name
+				mv /tmp/$$.m "$target_dir/$focuser_name.dist"
+				rm /tmp/$$.l
+				fi
+		fi
+
+#IN GOD WE TRVST.
