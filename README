@@ -13,7 +13,9 @@ Cygwin: bc cron postgresql-client libpq-devel make gcc-core man-pages-posix sox
 Debian: bc postgresql-client libpq-dev make gcc sox
 NetBSD: postgresql-client sox
 
-On Cygwin, run the Cygwin setup .EXE program, and proceed through the dialogs until you get to the dialog where you get to select packages to install, and then select the dependencies listed. On Debian, run "apt-get install postgresql-client libpq-dev make gcc sox" as root. On NetBSD, determine the current package version for postgresql-client at ftp://ftp.netbsd.org/pub/pkgsrc/packages/NetBSD and then use pkg_add to install it.
+If you are on Debian and want to use popularity for videos, also install "vlc".
+
+To install packages: On Cygwin, run the Cygwin setup .EXE program, and proceed through the dialogs until you get to the dialog where you get to select packages to install, and then select the dependencies listed. On Debian, run "apt-get install postgresql-client libpq-dev make gcc sox" as root. On NetBSD, determine the current package version for postgresql-client at ftp://ftp.netbsd.org/pub/pkgsrc/packages/NetBSD and then use pkg_add to install it.
 
 
 -Installing Popularity-
