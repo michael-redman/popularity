@@ -5,26 +5,32 @@ Still-image slideshow module for popularity, an adaptive music, video, and photo
 
 Installation
 
-Popularity runs on Debian Linux.
+Popularity-slideshow runs on Debian Linux and NetBSD.
 
-Popularity-slideshow depends on popularity-common, which you can clone from github.com/michael-redman
+Popularity-slideshow depends on the main popularity application, which you can clone from github.com/michael-redman
 
 To bulid and install popularity-slideshow:
 
+
 root@yourhost:~# aptitude install xli libx11-dev
-you@yourhost:/usr/local/src/popularity-slideshow$ make
-root@yourhost:/usr/local/src/popularity-slideshow# make install
+
+(NetBSD users should run ". ./NetBSD-env.sh" first to source some environment variables).
+
+you@yourhost:/usr/local/src/popularity/slideshow$ make
+root@yourhost:/usr/local/src/popularity/slideshow# make install
 
 
 Use
 
-See the documentation for popularity-common on setting up a database, importing songs, and building probability distribution files.
+Before using Popularity-slideshow you need to set up a database, and import the schema at /usr/local/share/popularity/slideshow/schema.sql and all of the common SQL functions at /usr/local/share/popularity/common/sql/
 
 Popularity-slideshow uses the full-screen root window and is therefore designed for use with window managers that either take up no screen space by default (like 9wm) or can "hide" themselves (like Icewm - use "TaskBarAutoHide=1" in ~/.icewm/preferences).
 
+See popularity_rebalance(1) for how to build a weighted distribution file for the slideshow program to use.
+
 Start slideshow:
 
-you@yourhost:~$ popularity-slideshow photos@your.db.host.ip flat.dist sharpened.dist
+you@yourhost:~$ popularity-slideshow photos@your.db.host.ip .popularity/dbname=example/max_sn1.dist
 
 "=" key requests, "-" key skips, "q" quits.
 
