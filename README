@@ -10,7 +10,7 @@ Copyright 2017-2018 Michael Redman
 First install the dependencies with your system's package manager.
 
 Cygwin: bc cron postgresql-client libpq-devel make gcc-core man-pages-posix sox
-Debian: bc postgresql-client libpq-dev make gcc sox
+Debian: bc make gcc libssl-dev postgresql-client libpq-dev sox
 NetBSD: postgresql-client sox
 
 If you are on Debian and want to use popularity for videos, also install "vlc".
