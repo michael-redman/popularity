@@ -21,10 +21,7 @@ create or replace function max_sn1() returns integer
 					return 0;
 					end if;
 			n=n+1;
-			if	(popularity>=0)
-				then popularity=ln(1+popularity);
-				else popularity=-ln(1-popularity);
-				end if;
+			popularity=popularity(popularity);
 			delta	=	popularity-mean;
 			mean	=	mean+delta/n;
 			m2	=	m2+delta*delta;
@@ -33,10 +30,7 @@ create or replace function max_sn1() returns integer
 				if	popularity is null
 					then exit; end if;
 				n=n+1;
-				if	(popularity>=0)
-					then popularity=ln(1+popularity);
-					else popularity=-ln(1-popularity);
-					end if;
+				popularity=popularity(popularity);
 				delta	=	popularity-mean;
 				mean	=	mean+delta/n;
 				m2	=	m2+delta*delta;

@@ -1,0 +1,13 @@
+create or replace function popularity
+	(votes double precision)
+	returns double precision
+	as	$TEXT$
+		<<block0>>
+		begin	if	(votes>0)
+				then  return ln(1+votes);
+				else  return votes;
+				end if;
+		end;
+		$TEXT$
+	language plpgsql;
+--IN GOD WE TRVST.
