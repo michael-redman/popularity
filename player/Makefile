@@ -1,3 +1,4 @@
+CPPFLAGS?=-D PLAY_LOG -D VOTE_LOG
 CFLAGS+=-Wall -g -fstack-protector -ftrapv -O2 -I /usr/local/include -I ../libpopularity
 LDFLAGS+=-L /usr/local/lib -L ../libpopularity
 MAN_PATH?=/usr/local/share/man
@@ -20,7 +21,7 @@ clean:
 	ecpg $<
 
 player: player.c enspool.c enspool.h pglisten.c
-	cc -o $@ -DSOX_PLAY_PATH=$(SOX_PLAY_PATH) player.c enspool.c pglisten.c $(CFLAGS) $(PQ_CFLAGS) $(LDFLAGS) $(PQ_LDFLAGS) -lm -lpopularity -lpthread -lpq
+	cc -o $@ -DSOX_PLAY_PATH=$(SOX_PLAY_PATH) player.c enspool.c pglisten.c $(CPPFLAGS) $(CFLAGS) $(PQ_CFLAGS) $(LDFLAGS) $(PQ_LDFLAGS) -lm -lpopularity -lpthread -lpq
 
 install:
 	for prog in $(PROGS) $(SCRIPTS); do install -m 0755 $$prog /usr/local/bin/popularity_$$prog; done
