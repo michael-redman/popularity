@@ -178,12 +178,15 @@ inline void scrobble(){
 */
 
 static char log_play_end(PGconn * pg_conn, char const * const hash)
-{	PGresult * pg_result = PQexecParams(pg_conn,
+{
+	#ifdef PLAY_LOG
+	PGresult * pg_result = PQexecParams(pg_conn,
 		"insert into play_log values(now(),$1)",1,NULL,
 		(char const * const[]){ hash }, NULL, (int const[]){0}, 0);
 	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
 		{ SQLERR; AT; PQclear(pg_result); return 1; }
 	PQclear(pg_result);
+	#endif
 	return 0; }
 
 char play(PGconn *pg_conn){

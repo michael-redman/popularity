@@ -46,8 +46,9 @@ static void close_db(void *db) { PQfinish(db); }
 
 static char log_vote(PGconn *pg_conn, char const * const vote){
 	//mutex for hash already locked when this function called
-	PGresult *pg_result;
 	char return_value=0;
+	#ifdef VOTE_LOG
+	PGresult *pg_result;
 	pg_result=PQexecParams(pg_conn,
 		"insert into vote_log values(now(),$1,$2)",
 		2, NULL,
@@ -58,6 +59,7 @@ static char log_vote(PGconn *pg_conn, char const * const vote){
 	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
 		{ AT; return_value|=1; }
 	PQclear(pg_result);
+	#endif
 	return return_value; }
 
 void * pglisten_f(void *db_connect_str)
