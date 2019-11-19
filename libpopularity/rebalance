@@ -13,11 +13,12 @@ db_name=$1
 libpq_connect_string="`popularity_libpq_connect_string $psql_host_arg $psql_user_arg $db_name`"
 target_dir="$HOME/.popularity/$libpq_connect_string"
 mkdir -p "$target_dir"
-target_nstates="`psql $psql_host_arg $psql_user_arg -Atc "select max_sn1()" $db_name`"
+target_nstates="`psql $psql_host_arg $psql_user_arg -Atc "select count(*) from pool where path is not null and votes>=0;" $db_name`"
+focuser_name=ge0
 if	[ "$target_nstates" -eq 0 ]
 	then	popularity_mkdist /tmp/$$ "$libpq_connect_string" 0
-		mv /tmp/$$ "$target_dir"/max_sn1.dist
-	else	popularity_focuser_bstep $psql_host_arg $psql_user_arg $db_name max_sn1 "$target_nstates"; fi
+		mv /tmp/$$ "$target_dir"/"$focuser_name".dist
+	else	popularity_focuser_bstep $psql_host_arg $psql_user_arg $db_name "$focuser_name" "$target_nstates"; fi
 psql $psql_host_arg $psql_user_arg -c "delete from cache" $db_name
 
 #IN GOD WE TRVST.

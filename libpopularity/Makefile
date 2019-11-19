@@ -6,7 +6,7 @@ SHARED_LIB_EXT?=so
 
 PROGS=entropy import mkdist clear_dead_paths print_new_paths
 SCRIPTS=focuser_bstep libpq_connect_string rebalance
-SQL=focuser.psql import_upsert.plpgsql max_sn1.plpgsql popularity.plpgsql post_delta.plpgsql
+SQL=focuser.psql import_upsert.plpgsql post_delta.plpgsql
 MAN1=import.1 clear_dead_paths.1 print_new_paths.1 rebalance.1
 
 LIBPOPULARITY=libpopularity.$(SHARED_LIB_EXT)

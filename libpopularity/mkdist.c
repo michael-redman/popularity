@@ -52,7 +52,7 @@ int main(int argc, char ** argv){
 		{	exit_status|=1; SQLERR; AT;
 			PQclear(pg_result); goto label1; }
 	PQclear(pg_result);
-	pg_result=PQexec(pg_conn,"DECLARE foo CURSOR FOR select hash, popularity(votes) from pool where path is not null;");
+	pg_result=PQexec(pg_conn,"DECLARE foo CURSOR FOR select hash, votes from pool where path is not null;");
 	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
 		{	exit_status|=1; SQLERR; AT;
 			PQclear(pg_result); goto finish_transaction; }
