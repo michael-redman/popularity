@@ -1,17 +1,18 @@
-drop function if exists despool(integer);
+drop function if exists despool();
 create or replace function
-	despool ()
-	returns char(40)
+	despool (out hash character(40), out delta integer)
+	returns record
 	as	$TEXT$
 		<<block0>>
-		declare _hash char(40);
 		declare _oid oid;
 		begin	select oid into _oid from spool where not exists (select * from play_log where play_log.hash=spool.hash and extract(epoch from(now()-end_time)) < (select cast(value as integer) from dictionary where key='replay_delay')) order by random() limit 1;
 			if	not found
-				then return 'Z'; end if;
-			select hash into _hash from spool where oid=_oid;
+				then	hash='Z';
+					return;
+					end if;
+			select spool.hash,spool.delta into hash, delta from spool where oid=_oid;
 			delete from spool where oid=_oid;
-			return _hash;
+			return;
 		end;
 		$TEXT$
 	language plpgsql;

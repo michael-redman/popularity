@@ -4,7 +4,7 @@ DROP TABLE if exists public.spool;
 drop table if exists play_log;
 drop table if exists dictionary;
 
-CREATE TABLE spool ( hash character(40) NOT NULL) with oids;
+CREATE TABLE spool ( hash character(40) NOT NULL, delta integer not null) with oids;
 
 CREATE TABLE pool (
     hash character(40) NOT NULL unique,

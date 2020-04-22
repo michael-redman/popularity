@@ -8,7 +8,7 @@
 
 char enspool(PGconn * pg_conn, char * hash){
 	char exit_status=0;
-	PGresult * pg_result=PQexecParams(pg_conn,"insert into spool values($1)"
+	PGresult * pg_result=PQexecParams(pg_conn,"insert into spool values($1,1)"
 		,1,NULL, (char const * const []){ hash }, NULL,
 		(const int []){0},0);
 	if      (PQresultStatus(pg_result)!=PGRES_COMMAND_OK)

@@ -148,7 +148,7 @@ char random_from_distfiles_replay_delay
 
 static int despool(PGconn *pg_conn)
 //Returns: 0 (Status OK, hash despooled); 1 (General err); 2 (Spool empty)
-{	PGresult *pg_result=PQexec(pg_conn,"select despool()");
+{	PGresult *pg_result=PQexec(pg_conn,"select * from despool()");
 	if	(PQresultStatus(pg_result)!=PGRES_TUPLES_OK)
 		{ SQLERR; AT; PQclear(pg_result); return 1; }
 	if	(!PQntuples(pg_result))
@@ -156,8 +156,12 @@ static int despool(PGconn *pg_conn)
 	if	(!strcmp(PQgetvalue(pg_result,0,0),"Z"))
 		{ PQclear(pg_result); return 2; }
 	strncpy(hash,PQgetvalue(pg_result,0,0),2*SHA_DIGEST_LENGTH);
+	if	(sscanf(PQgetvalue(pg_result,0,1),"%d",&delta)!=1)
+		{	fputs("failed reading delta from spool\n",stderr); AT;
+			return 1; }
 	PQclear(pg_result);
 	hash[2*SHA_DIGEST_LENGTH]='\0';
+	fprintf(stderr,"popularity_player read from spool: %s %d\n",hash,delta);
 	return 0; }
 
 /*
@@ -257,6 +261,7 @@ char play(PGconn *pg_conn){
 	if	(delta)
 		{	if	(asprintf(&_delta,"%d",delta)<0)
 				{ AT; return_value|=1; goto play_unlock; }
+			fprintf(stderr,"popularity_player posting delta %s %d\n",hash,delta);
 			pg_result=PQexecParams(pg_conn,
 				"SELECT post_delta($1,$2)",2,NULL,
 				(char const * const []){ hash,_delta },
@@ -297,7 +302,7 @@ char next(PGconn *pg_conn, int ndists, char const ** const distfiles){
 			delta=0; }
 		else{	r=despool(pg_conn);
 			switch(r){
-				case 0: delta=1; break;
+				case 0: break;
 				case 1: exit_status|=1; AT; goto label0;
 				case 2:	if      (random_from_distfiles(ndists,distfiles,hash))
 						{ exit_status=1; AT; goto label0; }
