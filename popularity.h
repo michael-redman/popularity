@@ -5,7 +5,7 @@
 #include <openssl/sha.h>
 
 struct dist_elem{
-	char hash[2*SHA_DIGEST_LENGTH+1];
+	unsigned char hash[SHA_DIGEST_LENGTH];
 	double cumul_density; };
 
 void get_decay_period(const char * const, float *);

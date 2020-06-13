@@ -1,5 +1,9 @@
 #define USE "popularity_player libpq_connection_string distfile [...]"
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <errno.h>
@@ -23,7 +27,9 @@
 
 #include "enspool.h"
 
+#ifdef EXTRA_FEATURES
 extern void * pglisten_f(void *);
+#endif
 
 char hash[2*SHA_DIGEST_LENGTH+1], die_flag=0;
 int delta, control_fd, down_votes;
@@ -102,7 +108,12 @@ char fetch_counts(PGconn * pg_conn, int * pool_count, int * spool_count){
 				{ AT; PQclear(pg_result); return 1; }
 			PQclear(pg_result);
 			*pool_count=pool_count_cache; }
+	#ifdef EXTRA_FEATURES
 	pg_result=PQexec(pg_conn, "SELECT COUNT(*) FROM spool where not exists (select * from play_log where play_log.hash=spool.hash and extract(epoch from(now()-end_time)) < (select cast(value as integer) from dictionary where key='replay_delay'))");
+	#else
+	pg_result=PQexec(pg_conn, "SELECT COUNT(*) FROM spool");
+	#endif
+
 	if	(PQresultStatus(pg_result)!=PGRES_TUPLES_OK)
 		{ SQLERR; AT; PQclear(pg_result); return 1; }
 	if	(sscanf(PQgetvalue(pg_result,0,0),"%d",spool_count)!=1)
@@ -183,7 +194,7 @@ inline void scrobble(){
 
 static char log_play_end(PGconn * pg_conn, char const * const hash)
 {
-	#ifdef PLAY_LOG
+	#ifdef EXTRA_FEATURES
 	PGresult * pg_result = PQexecParams(pg_conn,
 		"insert into play_log values(now(),$1)",1,NULL,
 		(char const * const[]){ hash }, NULL, (int const[]){0}, 0);
@@ -295,10 +306,16 @@ char next(PGconn *pg_conn, int ndists, char const ** const distfiles){
 	if	(	(	random()/(double)RAND_MAX
 				*((float)pool_count+(float)spool_count*(float)spool_count)
 				>= ((float)spool_count*(float)spool_count)))
-		{	if	(random_from_distfiles_replay_delay(
+		{
+#ifdef EXTRA_FEATURES
+			if	(random_from_distfiles_replay_delay(
 					ndists,distfiles,
 					hash,pg_conn))
 				{ exit_status|=1; AT; goto label0; }
+#else
+			if	(random_from_distfiles( ndists,distfiles, hash))
+				{ exit_status|=1; AT; goto label0; }
+#endif
 			delta=0; }
 		else{	r=despool(pg_conn);
 			switch(r){
@@ -328,7 +345,9 @@ int main(int argc, char** argv){
 	pthread_t command_loop_thread;
 	struct stat _stat;
 	#endif
+	#ifdef EXTRA_FEATURES
 	pthread_t pglisten_thread;
+	#endif
 	PGconn *pg_conn;
 	if	(sem_init(&semaphore,0,0))
 		{ AT; r0|=1; goto e_1; }
@@ -359,17 +378,21 @@ int main(int argc, char** argv){
 	if	(pthread_create(&command_loop_thread,NULL,command_loop,argv[1]))
 		{ AT; r0|=1; goto e3; }
 	#endif
+	#ifdef EXTRA_FEATURES
 	if	(pthread_create(
 			&pglisten_thread,NULL,
 			pglisten_f,argv[1]))
 		{ AT; r0|=1; goto e4; }
+	#endif
 	do	{	if	(next(pg_conn,argc-2,(char const ** const)&(argv[2])))
 				{ AT; r0|=1; die_flag=1; } }
 		while(!die_flag);
+	#ifdef EXTRA_FEATURES
 	pthread_kill(pglisten_thread,SIGIO); //return value not checked because thread might already be dead on its own
 	if	(pthread_join(pglisten_thread,&r2))
 		{ AT; r0|=1;  goto e4; }
 	e4:
+	#endif
 		#ifndef __CYGWIN__
 		pthread_kill(command_loop_thread,SIGIO); //return value not checked because thread might already be dead on its own
 		if	(pthread_join(command_loop_thread,&r2))

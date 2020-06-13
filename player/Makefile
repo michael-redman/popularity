@@ -1,6 +1,5 @@
-CPPFLAGS?=-D PLAY_LOG -D VOTE_LOG
-CFLAGS+=-Wall -g -fstack-protector -ftrapv -O2 -I /usr/local/include -I ../libpopularity
-LDFLAGS+=-L /usr/local/lib -L ../libpopularity
+CFLAGS+=-Wall -g -fstack-protector -ftrapv -O2 -I /usr/local/include -I ..
+LDFLAGS+=-L /usr/local/lib -L ..
 MAN_PATH?=/usr/local/share/man
 PQ_CFLAGS?=-I /usr/include/postgresql
 PQ_LDFLAGS?=-L /usr/lib/postgresql -lpq

@@ -1,6 +1,9 @@
-CFLAGS+=-Wall -g -fstack-protector
+CFLAGS+=-Wall -g -fstack-protector -I ..
 ECPG_CFLAGS?=-I /usr/include/postgresql
 ECPG_LDFLAGS?=-L /usr/lib/postgresql -lecpg
+LDFLAGS=-L ..
+PQ_CFLAGS?=-I /usr/include/postgresql
+PQ_LDFLAGS?=-L /usr/lib/postgresql -lpq
 XLI_PATH?=/usr/bin/xli
 
 PROGS=slideshow slideshow_request

@@ -24,6 +24,7 @@ char random_from_dist_file (char const * const path, char * const hash) {
 	unsigned int midpoint,low=0,high;
 	double key, density;
 	struct dist_elem e;
+	int iterator;
 	if	(!(stream=fopen(path,"rb")))
 		{ AT_ERR; perror(path); return 1; }
 	if	(	 fseek(stream,0,SEEK_END)==-1
@@ -49,7 +50,11 @@ char random_from_dist_file (char const * const path, char * const hash) {
 	if	(	fseek(stream,dist*sizeof(struct dist_elem),SEEK_SET)==-1
 			|| fread(&e,sizeof(struct dist_elem),1,stream)!=1)
 		{ AT_ERR; perror(path); goto e0; }
-	strcpy(hash,e.hash);
+	for	(iterator=0;iterator<SHA_DIGEST_LENGTH;iterator++)
+		sprintf(&hash[2*iterator],"%02hhx",e.hash[iterator]);
+	hash[2*SHA_DIGEST_LENGTH]='\0';
+	fprintf(stderr,"Read hash: %s\n",hash);
+	//strcpy(hash,e.hash);
 	/* testing code */
 		if	(key>e.cumul_density)
 			{	fprintf(stderr,"bsearch fault, key>item\n");

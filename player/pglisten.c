@@ -1,3 +1,4 @@
+#ifdef EXTRA_FEATURES
 #include <errno.h>
 #include <libpq-fe.h>
 #include <pthread.h>
@@ -157,5 +158,7 @@ void * pglisten_f(void *db_connect_str)
 		goto loop;
 	pthread_cleanup_pop(1);
 	}
+
+#endif
 
 //IN GOD WE TRVST.
