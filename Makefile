@@ -89,8 +89,8 @@ uninstall_common:
 	rm -f /usr/local/lib/$(LIBPOPULARITY)
 	rm -f /usr/local/include/popularity.h
 	rm -rf /usr/local/share/popularity/common
-	for file in $(MAN1); do rm -f $(MAN_PATH)/man1/$$file; done
-	rm $(MAN_PATH)/man7/popularity.7
+	for file in $(MAN1); do rm -f $(MAN_PATH)/man1/popularity$$file; done
+	rm -f $(MAN_PATH)/man7/popularity.7
 
 uninstall:
 	#cd libpopularity && if [ "`uname | grep NetBSD`" ]; then . ./NetBSD-env.sh; fi; if [ "`uname | grep CYGWIN`" ]; then . ./Cygwin-env.sh; fi && make uninstall

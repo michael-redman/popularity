@@ -19,11 +19,15 @@ double wf_inverse(double popularity, float weight) {
 	if	(popularity>=0)
 		return pow(1+popularity,-weight);
 		else return pow(1-popularity,weight); }
-*/
 
 double wf_joint(double votes, double age) {
 	if(votes>=0) return votes+age;
 	else return 1/(1-votes)+age; }
+*/
+
+double r_to_rplus(double x){
+	if (x>=0) return 1+x;
+	else return 1/(1-x); }
 
 #define DIE do{ perror(argv[optind]); exit(EXIT_FAILURE); }while(0)
 #define AT do{ fprintf(stderr,"at " __FILE__ ": %d\n",__LINE__); }while(0)
@@ -91,7 +95,7 @@ int main(int argc, char ** argv){
 		{	exit_status|=1; perror("strtod"); AT;
 			PQclear(pg_result); goto close_cursor; }
 	PQclear(pg_result);
-	node.cumul_density+=wf_joint(popularity*length,age/pool_count);
+	node.cumul_density+=r_to_rplus(popularity*length+age/pool_count);
 	if	(fwrite(&node,sizeof(node),1,distfile)!=1)
 		{ exit_status|=1; perror("fwrite"); AT; goto close_cursor; }
 	goto cursor_loop;

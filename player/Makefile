@@ -34,7 +34,7 @@ install:
 	for file in $(MAN1); do install -m 0644 $$file $(MAN_PATH)/man1/popularity_$$file; done
 
 uninstall:
-	for prog in $(PROGS) $(SCRIPTS); do rm /usr/local/bin/popularity_$$prog; done
+	for prog in $(PROGS) $(SCRIPTS); do rm -f /usr/local/bin/popularity_$$prog; done
 	rm -rf /usr/local/share/popularity/player
 	rm -f $(MAN_PATH)/man7/popularity-player.7
 	for file in $(MAN1); do rm -f $(MAN_PATH)/man1/popularity_$$file; done

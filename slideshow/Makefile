@@ -31,5 +31,5 @@ install:
 	install -m 0644 schema.psql /usr/local/share/popularity/slideshow/schema.psql
 
 uninstall:
-	for prog in $(PROGS) find_photos; do rm /usr/local/bin/popularity_$$prog; done
+	for prog in $(PROGS) find_photos; do rm -f /usr/local/bin/popularity_$$prog; done
 	rm -rf /usr/local/share/popularity/slideshow
