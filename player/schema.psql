@@ -1,26 +1,15 @@
 DROP INDEX if exists public.paths;
 DROP TABLE if exists public.pool;
 DROP TABLE if exists public.spool;
-drop table if exists play_log;
-drop table if exists dictionary;
 
 CREATE TABLE spool ( hash character(40) NOT NULL, delta integer not null) with oids;
 
 CREATE TABLE pool (
-    hash character(40) NOT NULL unique,
-    votes double precision NOT NULL,
-    "time" timestamp without time zone NOT NULL,
-    "path" text unique
+	hash character(40) NOT NULL unique,
+	"path" text unique,
+	duration float not null,
+	votes double precision NOT NULL,
+	"time" timestamp without time zone NOT NULL
 );
 
-create table play_log(end_time timestamp not null, hash char(40) not null);
-create table dictionary(
-	key text not null unique,
-	value text,
-	comment text);
-create table vote_log(
-	"time" timestamp not null,
-	hash character(40) not null,
-	vote character(1) not null);
-insert into dictionary values('replay_delay','3600','integer, seconds');
-insert into dictionary values('down_votes_to_kill','3','integer');
+--IN GOD WE TRVST.

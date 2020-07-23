@@ -5,9 +5,9 @@ PQ_CFLAGS?=-I /usr/include/postgresql
 PQ_LDFLAGS?=-L /usr/lib/postgresql -lpq
 SOX_PLAY_PATH?='"/usr/bin/play"'
 
-PROGS=player
+PROGS=player_import player_mkdist player
 SCRIPTS=find_music find_videos player_init_db shuffler
-SQL=despool.plpgsql schema.psql
+SQL=despool.plpgsql import_upsert.plpgsql schema.psql
 MAN1=player_init_db.1 shuffler.1
 
 all: $(PROGS)
@@ -18,6 +18,12 @@ clean:
 .SUFFIXES: .c .pgc
 .pgc.c:
 	ecpg $<
+
+player_import: import.c ../sha1_of_file.c
+	cc $(CFLAGS) -o $@ import.c ../sha1_of_file.c $(PQ_CFLAGS) $(PQ_LDFLAGS) -lcrypto -lavformat
+
+player_mkdist: mkdist.c
+	cc $(CFLAGS) -o $@ $< $(PQ_CFLAGS) $(PQ_LDFLAGS) -lm
 
 player: player.c enspool.c enspool.h pglisten.c
 	cc -o $@ -DSOX_PLAY_PATH=$(SOX_PLAY_PATH) player.c enspool.c pglisten.c $(CPPFLAGS) $(CFLAGS) $(PQ_CFLAGS) $(LDFLAGS) $(PQ_LDFLAGS) -lm -lpopularity -lpthread -lpq

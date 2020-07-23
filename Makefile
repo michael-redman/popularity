@@ -4,10 +4,10 @@ PQ_CFLAGS?=-I /usr/include/postgresql
 PQ_LDFLAGS?=-L /usr/lib/postgredql -lpq
 SHARED_LIB_EXT?=so
 
-PROGS=entropy import clear_dead_paths mkdist print_new_paths
-SCRIPTS=focuser_bstep libpq_connect_string rebalance
-SQL=import_upsert.plpgsql post_delta.plpgsql
-MAN1=import.1 clear_dead_paths.1 print_new_paths.1
+PROGS=entropy clear_dead_paths print_new_paths
+#SCRIPTS=focuser_bstep libpq_connect_string rebalance
+SQL=post_delta.plpgsql
+MAN1=import.1 clear_dead_paths.1
 
 LIBPOPULARITY=libpopularity.$(SHARED_LIB_EXT)
 
@@ -31,14 +31,8 @@ clean:
 entropy: entropy.c popularity.h
 	cc $(CFLAGS) $(PQ_CFLAGS) -o $@ $< -lm
 
-import: import.c sha1_of_file.c
-	cc $(CFLAGS) -o $@ import.c sha1_of_file.c $(PQ_CFLAGS) $(PQ_LDFLAGS) -lcrypto
-
 #n-sn-ge-1: n-sn-ge-1.c
 #	cc $(CFLAGS) -o $@ $< $(ECPG_CFLAGS) $(ECPG_LDFLAGS) -lm
-
-mkdist: mkdist.c
-	cc $(CFLAGS) -o $@ $< $(PQ_CFLAGS) $(PQ_LDFLAGS) -lm
 
 print_new_paths: print_new_paths.c 
 	cc $(CFLAGS) -o $@ $< $(PQ_CFLAGS) $(PQ_LDFLAGS)
