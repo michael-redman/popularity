@@ -16,10 +16,8 @@ void fetch_counts_ecpg(unsigned int * pool_count, unsigned int * spool_count){
 	unsigned int pool_count_, spool_count_;
 	EXEC SQL END DECLARE SECTION;
 	if(!cache_flag){
-		EXEC SQL
-			SELECT COUNT(*) INTO :pool_count_
-			FROM pool WHERE PATH IS NOT NULL;
-			if(sqlca.sqlcode<0) exit(EXIT_FAILURE);
+		EXEC SQL SELECT known_paths_count() INTO :pool_count_;
+		if(sqlca.sqlcode<0) exit(EXIT_FAILURE);
 		pool_count_cache=pool_count_;
 		cache_flag=1;
 	}

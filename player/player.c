@@ -101,7 +101,7 @@ char fetch_counts(PGconn * pg_conn, int * pool_count, int * spool_count){
 	static int pool_count_cache=-1;
 	PGresult *pg_result;
 	if	(pool_count_cache==-1)
-		{	pg_result=PQexec(pg_conn, "SELECT COUNT(*) FROM pool WHERE PATH IS NOT NULL;");
+		{	pg_result=PQexec(pg_conn, "SELECT known_paths_count();");
 			if	(PQresultStatus(pg_result)!=PGRES_TUPLES_OK)
 				{ SQLERR; AT; PQclear(pg_result); return 1; }
 			if	(sscanf(PQgetvalue(pg_result,0,0),"%d",&pool_count_cache)!=1)

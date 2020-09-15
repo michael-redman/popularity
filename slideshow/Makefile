@@ -22,7 +22,7 @@ slideshow_import: import.c ../sha1_of_file.c
 	cc $(CFLAGS) -o $@ import.c ../sha1_of_file.c $(PQ_CFLAGS) $(PQ_LDFLAGS) -lcrypto
 
 slideshow_mkdist: mkdist.c
-	cc $(CFLAGS) -o $@ $< $(PQ_CFLAGS) $(PQ_LDFLAGS) -lm
+	cc $(CFLAGS) -o $@ mkdist.c $(PQ_CFLAGS) $(PQ_LDFLAGS) -lm
 
 slideshow: slideshow.c enspool.c enspool.h fetch_counts_ecpg.c
 	cc -o $@ -DXLI_PATH=\"$(XLI_PATH)\" slideshow.c enspool.c fetch_counts_ecpg.c $(CFLAGS) $(ECPG_CFLAGS) $(LDFLAGS) $(ECPG_LDFLAGS) -lX11 -lm -lpopularity -lpq
