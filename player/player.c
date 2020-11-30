@@ -91,6 +91,10 @@ void * command_loop(void * arg)
 							perror("pthread_mutex_unlock");
 							AT; goto end; };
 					break;
+				case 'k':
+					if	(kill(player_pid,SIGKILL))
+						perror("kill returned nonzero");
+					break;
 				default: fprintf(stderr,"unknown command from fifo: %c\n",c); }
 			} while(r0); }
 	end:	PQfinish(pg_conn);

@@ -11,7 +11,7 @@ create or replace function
 			select path into old_path from pool where hash=_hash;
 			if	not found then
 				insert into pool values(_hash,_path,_duration,0,now());
-				else	if	_path<>old_path then
+				else	if	old_path is null or _path<>old_path then
 						update pool set path=_path where hash=_hash;
 						end if;
 				end if;
