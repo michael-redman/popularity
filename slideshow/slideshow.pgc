@@ -175,6 +175,7 @@ int main(int argc, char** argv){
 	float display_time=0;
 	char path[PATH_MAX+1];
 	struct timespec rqt, rmt;
+	puts("Version: " VERSION);
 	if(!(d=XOpenDisplay(NULL))) DIE;
 	w=XCreateSimpleWindow(d,XDefaultRootWindow(d),0,0,4,4,1,0,0xffffff);
 	if

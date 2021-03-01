@@ -1,56 +1,55 @@
-drop table if exists cache;
-create table cache (name text not null unique, value text not null);
 drop function if exists post_delta(char(40),real);
 create or replace function
 	post_delta
 	(hash char(40), delta real)
 	returns void
 	/* eqns approximating decay & votes balanced in "steady state":
-	1 vote = popularity_limit - popularity_limit * e(-age / period) 
-	period = -age / l( (popularity_limit - 1) / popularity_limit )
+	1 vote = max_votes - max_votes * e(-age / period) 
+	(vote size cancels out if not 1 for eq in max_votes not max_popularity)
+	period = -age / l( (max_votes - 1) / max_votes )
 	Since we delete bad content over time, consider the range of what the
-	system will "remember" to be from 0 to popularity_limit instead of from
-	-popularity_limit to popularity_limit
-	bits = l(popularity_limit) / l(2)
-	popularity_limit = 2 ^ bits
+	system will "remember" to be from 0 to max_votes instead of from
+	-max_votes to max_votes
+	bits = l(max_votes) / l(2)
+	max_votes = 2 ^ bits
 	*/
 	as	$TEXT$
 		<<block0>>
 		declare max_amp constant integer := 16777216; -- = 2^24
 			period double precision;
-			average_age double precision;
+			max_age double precision;
 			age double precision;
 			popularity double precision;
 		begin	lock table cache;
 			if	not exists
 					(select * from cache
 					where name='period')
-				then	SELECT	AVG(EXTRACT(EPOCH FROM
+				then	SELECT	max(EXTRACT(EPOCH FROM
 						NOW()-TIME))
-						INTO average_age
+						INTO max_age
 						FROM POOL
 						WHERE PATH IS NOT NULL;
 					period =
-						- average_age
+						- max_age
 						/ ln( (max_amp-1.0)/max_amp );
 					insert	into cache values
 						('period',period);
 				else	select value into period 
 					from cache where name='period';
 				end if;
-			--raise notice '%', 'avgerage_age: ' || average_age;
+			--raise notice '%', 'max_age: ' || max_age;
 			--raise notice '%', 'period: ' || period;
 			SELECT	pool.votes,
 				EXTRACT(EPOCH FROM NOW()-TIME)
                 		INTO popularity, age FROM pool
 				WHERE pool.hash=post_delta.hash;
-			--raise notice '%', 'popularity: ' || popularity || ' age: ' || age;
+			raise notice 'post_delta(%', hash || ',' || delta || '): old popularity: ' || popularity || ' age: ' || age;
 			popularity=popularity*exp(-age/period)+delta;
 			UPDATE pool
 				SET TIME=NOW(),
 				votes=block0.popularity
 				WHERE pool.hash=post_delta.hash;
-			--raise notice '%', 'popularity: ' || popularity;
+			raise notice 'post_delta: new popularity: %', block0.popularity;
 		end;
 		$TEXT$
 	language plpgsql;

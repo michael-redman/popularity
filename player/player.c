@@ -353,6 +353,7 @@ int main(int argc, char** argv){
 	pthread_t pglisten_thread;
 	#endif
 	PGconn *pg_conn;
+	puts("Version: " VERSION);
 	if	(sem_init(&semaphore,0,0))
 		{ AT; r0|=1; goto e_1; }
 	#ifndef __CYGWIN__

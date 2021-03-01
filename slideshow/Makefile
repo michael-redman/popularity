@@ -1,3 +1,6 @@
+include Version.mk
+CFLAGS+=-DVERSION=\"$(VERSION)\"
+
 CFLAGS+=-Wall -g -fstack-protector -I ..
 ECPG_CFLAGS?=-I /usr/include/postgresql
 ECPG_LDFLAGS?=-L /usr/lib/postgresql -lecpg

@@ -38,7 +38,7 @@ int main(int argc, char ** argv){
 	PGconn *pg_conn;
 	PGresult *pg_result;
 	double popularity, age;
-	long pool_count;
+	long pool_count, set_count;
 	//double (*wf)(double,float);
 	struct dist_elem node;
 	//float strength=1;
@@ -72,7 +72,7 @@ int main(int argc, char ** argv){
 		{	exit_status|=1; SQLERR; AT;
 			PQclear(pg_result); goto label1; }
 	PQclear(pg_result);
-	pg_result=PQexec(pg_conn,"DECLARE foo CURSOR FOR select hash, votes, extract(epoch from now()-time) from pool where path is not null;");
+	pg_result=PQexec(pg_conn,"DECLARE foo CURSOR FOR select hash, votes, extract(epoch from now()-time), coalesce(count,1) from pool left join set_counts_cache on pool.set=set_counts_cache.set where path is not null;");
 	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
 		{	exit_status|=1; SQLERR; AT;
 			PQclear(pg_result); goto finish_transaction; }
@@ -90,12 +90,18 @@ int main(int argc, char ** argv){
 				PQclear(pg_result); goto close_cursor; }
 	//strcpy(node.hash,PQgetvalue(pg_result,0,0));
 	popularity=strtod(PQgetvalue(pg_result,0,1),NULL);
+	if	(errno==EINVAL || errno==ERANGE)
+		{	exit_status|=1; perror("strtod"); AT;
+			PQclear(pg_result); goto close_cursor; }
 	age=strtod(PQgetvalue(pg_result,0,2),NULL);
 	if	(errno==EINVAL || errno==ERANGE)
 		{	exit_status|=1; perror("strtod"); AT;
 			PQclear(pg_result); goto close_cursor; }
+	if	(sscanf(PQgetvalue(pg_result,0,3),"%ld",&set_count)!=1)
+		{	exit_status|=1; AT;
+			PQclear(pg_result); goto label1; }
 	PQclear(pg_result);
-	node.cumul_density+=r_to_rplus(popularity*length+age/pool_count);
+	node.cumul_density+=r_to_rplus(popularity*length+age/pool_count)/sqrt(set_count);
 	if	(fwrite(&node,sizeof(node),1,distfile)!=1)
 		{ exit_status|=1; perror("fwrite"); AT; goto close_cursor; }
 	goto cursor_loop;
