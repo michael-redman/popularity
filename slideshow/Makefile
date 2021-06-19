@@ -4,7 +4,7 @@ CFLAGS+=-DVERSION=\"$(VERSION)\"
 CFLAGS+=-Wall -g -fstack-protector -I ..
 ECPG_CFLAGS?=-I /usr/include/postgresql
 ECPG_LDFLAGS?=-L /usr/lib/postgresql -lecpg
-LDFLAGS=-L ..
+LDFLAGS?=-L ..
 PQ_CFLAGS?=-I /usr/include/postgresql
 PQ_LDFLAGS?=-L /usr/lib/postgresql -lpq
 XLI_PATH?=/usr/bin/xli
@@ -25,7 +25,7 @@ slideshow_import: import.c ../sha1_of_file.c
 	cc $(CFLAGS) -o $@ import.c ../sha1_of_file.c $(PQ_CFLAGS) $(PQ_LDFLAGS) -lcrypto
 
 slideshow_mkdist: mkdist.c
-	cc $(CFLAGS) -o $@ mkdist.c $(PQ_CFLAGS) $(PQ_LDFLAGS) -lm
+	cc $(CFLAGS) -o $@ mkdist.c $(PQ_CFLAGS) $(PQ_LDFLAGS) $(LDFLAGS) -lm -lpopularity
 
 slideshow: slideshow.c enspool.c enspool.h fetch_counts_ecpg.c
 	cc -o $@ -DXLI_PATH=\"$(XLI_PATH)\" slideshow.c enspool.c fetch_counts_ecpg.c $(CFLAGS) $(ECPG_CFLAGS) $(LDFLAGS) $(ECPG_LDFLAGS) -lX11 -lm -lpopularity -lpq
