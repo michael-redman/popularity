@@ -1,3 +1,5 @@
+//Use: popularity_slideshow photos@pg .cache/popularity/photos.dist
+
 EXEC SQL WHENEVER SQLERROR CALL SQLPRINT;
 EXEC SQL WHENEVER SQLWARNING CALL SQLPRINT;
 
@@ -140,7 +142,9 @@ void handlequeuedevents
 
 void paint(char * path){
 	struct stat st;
-	int pid,exit_status;
+	const int bufsize=1920;
+	char buf[bufsize];
+	int pid,exit_status, bytes_read, fds[2], fno;
 	static char last_path[PATH_MAX+1]="\0";
 	if	(!strcmp(path,last_path))
 		{	fprintf(stderr,
@@ -151,11 +155,42 @@ void paint(char * path){
 	if(stat(path,&st)){
 		fprintf(stderr,"could not stat %s\n",path);
 		exit(EXIT_FAILURE); }
+	if	(pipe(fds))
+		{ perror("pipe: "); AT_ERR; exit(EXIT_FAILURE); }
 	pid=fork();
 	if(pid==-1){
 		fprintf(stderr,"could not fork\n");
-		exit(-1);
-	}else if(!pid) execl(XLI_PATH,XLI_PATH,"-onroot","-fullscreen","-quiet","-at","0,0","-border","black",path,NULL);
+		exit(-1); }
+	if	(!pid)
+		{	if	(close(fds[0]))
+				{ perror("close"); AT_ERR; exit(EXIT_FAILURE); }
+			fno=fileno(stderr);
+			if	(fno==-1)
+				{ perror("fileno"); AT_ERR; exit(EXIT_FAILURE);}
+			if	(dup2(fds[1],fno)==-1)
+				{ perror("dup2"); AT_ERR; exit(EXIT_FAILURE); }
+			execl(XLI_PATH,XLI_PATH,"-onroot","-fullscreen","-quiet","-at","0,0","-border","black",path,NULL);
+			perror("execl"); exit(EXIT_FAILURE); }
+	if	(close(fds[1]))
+		{ perror("close"); AT_ERR; exit(EXIT_FAILURE); }
+	exit_status=0;
+	do	{	bytes_read=read(fds[0],buf,bufsize);
+			if	(bytes_read==-1)
+				{ perror("read"); AT_ERR; exit(EXIT_FAILURE); }
+			if	(!bytes_read) break;
+			exit_status=1;
+			fno=fileno(stderr);
+			if	(fno==-1)
+				{ perror("fileno"); AT_ERR; exit(EXIT_FAILURE);}
+			if	(write(fno,buf,bytes_read)==-1)
+				{ perror("write"); AT_ERR; exit(EXIT_FAILURE); }
+		}while(1);
+	if	(close(fds[0]))
+		{ perror("close"); AT_ERR; exit(EXIT_FAILURE); }
+	if	(exit_status)
+		{	fputs("xli wrote to stderr, considering as err\n",stderr);
+			exit(EXIT_FAILURE); }
+	//xli returns 0 even on err
 	waitpid(pid,&exit_status,0); }
 
 #define DIE do{ \

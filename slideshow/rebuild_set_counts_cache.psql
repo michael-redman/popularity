@@ -1,0 +1,2 @@
+delete from set_counts_cache;
+insert into set_counts_cache select set,count(*) from pool where path is not null and set is not null group by set;

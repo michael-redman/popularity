@@ -1,0 +1,5 @@
+CREATE TABLE public.set_counts_cache (
+    set integer NOT NULL unique,
+    count integer NOT NULL
+);
+--IN GOD WE TRVST.
