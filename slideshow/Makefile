@@ -10,7 +10,7 @@ PQ_LDFLAGS?=-L /usr/lib/postgresql -lpq
 XLI_PATH?=/usr/bin/xli
 
 PROGS=slideshow_import slideshow_mkdist slideshow_request slideshow
-SQL=import_upsert.plpgsql schema.psql
+SQL=import_upsert.plpgsql
 
 all: $(PROGS)
 
@@ -37,6 +37,7 @@ install:
 	for prog in $(PROGS) find_photos; do install -m 0755 $$prog /usr/local/bin/popularity_$$prog; done
 	mkdir -p /usr/local/share/popularity/slideshow/doc
 	for doc in COPYRIGHT LICENSE README; do install -m 0644 $$doc /usr/local/share/popularity/slideshow/doc/$$doc; done
+	cp -a schema /usr/local/share/popularity/slideshow/
 	mkdir -p /usr/local/share/popularity/slideshow/sql
 	for file in $(SQL); do install -m 0644 $$file /usr/local/share/popularity/slideshow/sql/$$file; done
 

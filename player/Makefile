@@ -10,7 +10,7 @@ SOX_PLAY_PATH?='"/usr/bin/play"'
 
 PROGS=player_import player_mkdist player
 SCRIPTS=find_music find_videos player_init_db shuffler
-SQL=despool.plpgsql import_upsert.plpgsql schema.psql
+SQL=despool.plpgsql import_upsert.plpgsql
 MAN1=player_init_db.1 shuffler.1
 
 all: $(PROGS)
@@ -35,6 +35,7 @@ install:
 	for prog in $(PROGS) $(SCRIPTS); do install -m 0755 $$prog /usr/local/bin/popularity_$$prog; done
 	mkdir -p /usr/local/share/popularity/player/doc
 	for doc in COPYRIGHT LICENSE README; do install -m 0644 $$doc /usr/local/share/popularity/player/doc/$$doc; done
+	cp -a schema /usr/local/share/popularity/player/
 	mkdir -p /usr/local/share/popularity/player/sql
 	for file in $(SQL); do install -m 0644 $$file /usr/local/share/popularity/player/sql/$$file; done
 	mkdir -p $(MAN_PATH)/man1

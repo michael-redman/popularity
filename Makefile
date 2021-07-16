@@ -43,14 +43,11 @@ print_new_paths: print_new_paths.c
 clear_dead_paths: clear_dead_paths.c
 	cc $(CFLAGS) -o $@ $< $(PQ_CFLAGS) $(PQ_LDFLAGS)
 
-file_age.o: file_age.c
-	cc $(CFLAGS) -c -fpic file_age.c $(PQ_CFLAGS)
-
 popularity.o: popularity.c
 	cc $(CFLAGS) -c -fpic popularity.c $(PQ_CFLAGS)
 
-$(LIBPOPULARITY): popularity.o popularity.h file_age.o
-	cc -shared -o $@ file_age.o popularity.o $(PQ_LDFLAGS)
+$(LIBPOPULARITY): popularity.o popularity.h
+	cc -shared -o $@ popularity.o $(PQ_LDFLAGS)
 
 common: $(PROGS) $(LIBPOPULARITY)
 

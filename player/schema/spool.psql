@@ -1,0 +1,2 @@
+CREATE TABLE spool ( hash character(40) NOT NULL, delta integer not null) with oids;
+--IN GOD WE TRVST.

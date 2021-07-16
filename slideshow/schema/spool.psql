@@ -1,0 +1,9 @@
+DROP TABLE public.spool;
+
+CREATE TABLE spool (
+    hash character(40) NOT NULL,
+    display_time real NOT NULL,
+    delta_time real NOT NULL
+);
+
+--IN GOD WE TRVST.

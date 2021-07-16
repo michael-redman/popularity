@@ -1,0 +1,10 @@
+CREATE TABLE pool (
+	hash character(40) NOT NULL unique,
+	"path" text unique,
+	import_time timestamp not null,
+	duration float not null,
+	votes double precision NOT NULL,
+	"last_vote_time" timestamp NOT NULL
+);
+
+--IN GOD WE TRVST.

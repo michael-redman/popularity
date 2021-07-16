@@ -1,0 +1,5 @@
+CREATE TABLE public.tags (
+    hash character(40) NOT NULL,
+    tag text NOT NULL
+);
+--IN GOD WE TRVST.

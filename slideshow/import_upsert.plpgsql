@@ -9,7 +9,7 @@ create or replace function
 		begin	update pool set path=null where path=_path and hash<>_hash;
 			select path into old_path from pool where hash=_hash;
 			if	not found then
-				insert into pool values(_hash,0,now(),_path);
+				insert into pool values(_hash,_path,null,now(),0,now());
 				else	if	old_path is null or _path<>old_path then
 						update pool set path=_path where hash=_hash;
 						end if;

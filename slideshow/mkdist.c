@@ -37,14 +37,13 @@ int main(int argc, char ** argv){
 	int exit_status=0, iterator;
 	PGconn *pg_conn;
 	PGresult *pg_result;
-	double popularity, avg_votes, avg_time_since_last_vote;
+	double popularity, avg_votes, avg_time_since_last_vote, age;
 	long pool_count, set_count;
 	//double (*wf)(double,float);
 	struct dist_elem node;
 	//float strength=1;
 	FILE *distfile;
 	char *query;
-	time_t file_age_v;
 	/*if	(getopt(argc,argv,"v")=='v')
 		wf=wf_inverse;
 		else wf=wf_regular;*/
@@ -59,7 +58,7 @@ int main(int argc, char ** argv){
 		{	exit_status|=1;
 			SQLERR;
 			AT; goto label0; }
-	pg_result=PQexec(pg_conn,"select count(*), avg(votes), avg(extract(epoch from now()-time)) from pool where path is not null");
+	pg_result=PQexec(pg_conn,"select count(*), avg(votes), avg(extract(epoch from now()-last_vote_time)) from pool where path is not null");
 	if	(PQresultStatus(pg_result)!=PGRES_TUPLES_OK)
 		{	exit_status|=1; SQLERR; AT;
 			PQclear(pg_result); goto label1; }
@@ -83,7 +82,7 @@ int main(int argc, char ** argv){
 		{	exit_status|=1; SQLERR; AT;
 			PQclear(pg_result); goto label1; }
 	PQclear(pg_result);
-	pg_result=PQexec(pg_conn,"DECLARE foo CURSOR FOR select hash, votes, extract(epoch from now()-time), coalesce(count,1), path from pool left join set_counts_cache on pool.set=set_counts_cache.set where path is not null;");
+	pg_result=PQexec(pg_conn,"DECLARE foo CURSOR FOR select hash, votes, extract(epoch from now()-import_time), coalesce(count,1) from pool left join set_counts_cache on pool.set=set_counts_cache.set where path is not null;");
 	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
 		{	exit_status|=1; SQLERR; AT;
 			PQclear(pg_result); goto finish_transaction; }
@@ -104,20 +103,20 @@ int main(int argc, char ** argv){
 	if	(errno==EINVAL || errno==ERANGE)
 		{	exit_status|=1; perror("strtod"); AT;
 			PQclear(pg_result); goto close_cursor; }
-	/*age=strtod(PQgetvalue(pg_result,0,2),NULL);
+	age=strtod(PQgetvalue(pg_result,0,2),NULL);
 	if	(errno==EINVAL || errno==ERANGE)
 		{	exit_status|=1; perror("strtod"); AT;
-			PQclear(pg_result); goto close_cursor; }*/
+			PQclear(pg_result); goto close_cursor; }
 	if	(sscanf(PQgetvalue(pg_result,0,3),"%ld",&set_count)!=1)
 		{	exit_status|=1; AT;
 			PQclear(pg_result); goto label1; }
-	if	(file_age(PQgetvalue(pg_result,0,4),&file_age_v))
+	/*if	(file_age(PQgetvalue(pg_result,0,4),&file_age_v))
 		{	exit_status|=1;
 			fprintf(stderr,"mkdist: could not get file_age() for %s\n",PQgetvalue(pg_result,0,4)); AT;
-			PQclear(pg_result); goto close_cursor; }
+			PQclear(pg_result); goto close_cursor; }*/
 	PQclear(pg_result);
 	//node.cumul_density+=r_to_rplus(popularity*length+age/pool_count)/sqrt(set_count);
-	node.cumul_density+=r_to_rplus((popularity+avg_votes*avg_time_since_last_vote/file_age_v)/sqrt(set_count));
+	node.cumul_density+=r_to_rplus((popularity+avg_votes*avg_time_since_last_vote/age)/sqrt(set_count));
 	if	(fwrite(&node,sizeof(node),1,distfile)!=1)
 		{ exit_status|=1; perror("fwrite"); AT; goto close_cursor; }
 	goto cursor_loop;
