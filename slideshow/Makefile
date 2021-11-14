@@ -36,7 +36,7 @@ slideshow_request: request.c enspool.c enspool.h fetch_counts_ecpg.c
 install:
 	for prog in $(PROGS) find_photos; do install -m 0755 $$prog /usr/local/bin/popularity_$$prog; done
 	mkdir -p /usr/local/share/popularity/slideshow/doc
-	for doc in COPYRIGHT LICENSE README; do install -m 0644 $$doc /usr/local/share/popularity/slideshow/doc/$$doc; done
+	for doc in README; do install -m 0644 $$doc /usr/local/share/popularity/slideshow/doc/$$doc; done
 	cp -a schema /usr/local/share/popularity/slideshow/
 	mkdir -p /usr/local/share/popularity/slideshow/sql
 	for file in $(SQL); do install -m 0644 $$file /usr/local/share/popularity/slideshow/sql/$$file; done

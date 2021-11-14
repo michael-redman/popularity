@@ -144,7 +144,9 @@ void paint(char * path){
 	struct stat st;
 	const int bufsize=1920;
 	char buf[bufsize];
-	int pid,exit_status, bytes_read, fds[2], fno;
+	int pid,exit_status, stderr_fds[2], stdout_fds[2], fno, extra_bytes;
+	unsigned int before_marker;
+	FILE *xli_stderr, *xli_stdout;
 	static char last_path[PATH_MAX+1]="\0";
 	if	(!strcmp(path,last_path))
 		{	fprintf(stderr,
@@ -155,40 +157,70 @@ void paint(char * path){
 	if(stat(path,&st)){
 		fprintf(stderr,"could not stat %s\n",path);
 		exit(EXIT_FAILURE); }
-	if	(pipe(fds))
+	if	(pipe(stderr_fds))
+		{ perror("pipe: "); AT_ERR; exit(EXIT_FAILURE); }
+	if	(pipe(stdout_fds))
 		{ perror("pipe: "); AT_ERR; exit(EXIT_FAILURE); }
 	pid=fork();
 	if(pid==-1){
 		fprintf(stderr,"could not fork\n");
 		exit(-1); }
 	if	(!pid)
-		{	if	(close(fds[0]))
+		{	if	(close(stderr_fds[0]))
 				{ perror("close"); AT_ERR; exit(EXIT_FAILURE); }
 			fno=fileno(stderr);
 			if	(fno==-1)
 				{ perror("fileno"); AT_ERR; exit(EXIT_FAILURE);}
-			if	(dup2(fds[1],fno)==-1)
+			if	(dup2(stderr_fds[1],fno)==-1)
+				{ perror("dup2"); AT_ERR; exit(EXIT_FAILURE); }
+			if	(close(stdout_fds[0]))
+				{ perror("close"); AT_ERR; exit(EXIT_FAILURE); }
+			fno=fileno(stdout);
+			if	(fno==-1)
+				{ perror("fileno"); AT_ERR; exit(EXIT_FAILURE);}
+			if	(dup2(stdout_fds[1],fno)==-1)
 				{ perror("dup2"); AT_ERR; exit(EXIT_FAILURE); }
 			execl(XLI_PATH,XLI_PATH,"-onroot","-fullscreen","-quiet","-at","0,0","-border","black",path,NULL);
 			perror("execl"); exit(EXIT_FAILURE); }
-	if	(close(fds[1]))
+	if	(close(stderr_fds[1]))
 		{ perror("close"); AT_ERR; exit(EXIT_FAILURE); }
 	exit_status=0;
-	do	{	bytes_read=read(fds[0],buf,bufsize);
-			if	(bytes_read==-1)
-				{ perror("read"); AT_ERR; exit(EXIT_FAILURE); }
-			if	(!bytes_read) break;
-			exit_status=1;
-			fno=fileno(stderr);
-			if	(fno==-1)
-				{ perror("fileno"); AT_ERR; exit(EXIT_FAILURE);}
-			if	(write(fno,buf,bytes_read)==-1)
-				{ perror("write"); AT_ERR; exit(EXIT_FAILURE); }
+	xli_stderr=fdopen(stderr_fds[0],"r");
+	if	(!xli_stderr)
+		{ perror("fdopen"); AT_ERR; exit(EXIT_FAILURE);}
+	do	{	if	(!fgets(buf,bufsize,xli_stderr))
+				{	if	(ferror(xli_stderr))
+						{	perror("fgets"); AT_ERR;
+							exit(EXIT_FAILURE); }
+					break; }
+			if	(fputs(buf,stderr)==EOF)
+				{ perror("fputs"); AT_ERR; exit(EXIT_FAILURE); }
+			if	(	!strcmp(buf,"Premature end of JPEG file\n")
+					|| !strcmp(buf,"Corrupt JPEG data: premature end of data segment\n")
+					|| sscanf(buf,"Corrupt JPEG data: %d extraneous bytes before marker 0x%x\n",&extra_bytes,&before_marker)==2)
+				continue;
+			exit_status|=1;
 		}while(1);
-	if	(close(fds[0]))
+	if	(fclose(xli_stderr))
+		{ perror("fclose"); AT_ERR; exit(EXIT_FAILURE); }
+	if	(close(stdout_fds[1]))
 		{ perror("close"); AT_ERR; exit(EXIT_FAILURE); }
+	xli_stdout=fdopen(stdout_fds[0],"r");
+	if	(!xli_stdout)
+		{ perror("fdopen"); AT_ERR; exit(EXIT_FAILURE);}
+	do	{	if	(!fgets(buf,bufsize,xli_stdout))
+				{	if	(ferror(xli_stdout))
+						{	perror("fgets"); AT_ERR;
+							exit(EXIT_FAILURE); }
+					break; }
+			if	(fputs(buf,stderr)==EOF)
+				{ perror("fputs"); AT_ERR; exit(EXIT_FAILURE); }
+			exit_status|=1;
+		}while(1);
+	if	(fclose(xli_stdout))
+		{ perror("fclose"); AT_ERR; exit(EXIT_FAILURE); }
 	if	(exit_status)
-		{	fputs("xli wrote to stderr, considering as err\n",stderr);
+		{	fputs("xli wrote output, considering as err\n",stderr);
 			exit(EXIT_FAILURE); }
 	//xli returns 0 even on err
 	waitpid(pid,&exit_status,0); }

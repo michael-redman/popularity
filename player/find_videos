@@ -9,4 +9,5 @@ find -H $@ -type f \( \
 	-or -iname '*.mov' \
 	-or -iname '*.vob' \
 	-or -iname '*.mp4' \
+	-or -iname '*.webm' \
 	-or -iname '*.wmv' \) -print0

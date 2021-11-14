@@ -1,47 +1,56 @@
 POPULARITY
 
-Adaptive media randomplayer for Debian, NetBSD, and Cygwin
+Adaptive media randomplayer for Debian Linux
 
-Copyright 2017-2018 Michael Redman
+Copyright 2017-2021 Michael Redman
 
+GPL License
 
--Installating Dependencies-
-
-First install the dependencies with your system's package manager.
-
-Cygwin: bc cron postgresql-client libpq-devel make gcc-core man-pages-posix sox
-Debian: bc make gcc libssl-dev postgresql-client libpq-dev sox
-NetBSD: postgresql-client sox
-
-If you are on Debian and want to use popularity for videos, also install "vlc".
-
-To install packages: On Cygwin, run the Cygwin setup .EXE program, and proceed through the dialogs until you get to the dialog where you get to select packages to install, and then select the dependencies listed. On Debian, run "apt-get install postgresql-client libpq-dev make gcc sox" as root. On NetBSD, determine the current package version for postgresql-client at ftp://ftp.netbsd.org/pub/pkgsrc/packages/NetBSD and then use pkg_add to install it.
+https://github.com/michael-redman/popularity
 
 
--Installing Popularity-
+- Installating Dependencies -
 
-If you have not already fetched the source, also install git (the packages is "git-core" on Debian), and clone the repostiory:
+apt install ...
 
-git clone https://github.com/michael-redman/popularity
+Common: make gcc libssl-dev
 
-Then enter that directory:
+Music/Video Shuffler: libpq-dev libavformat-dev sox vlc
 
-cd popularity
-
-And run:
-
-make
-
-Then as root:
-
-make install
-
---Optionsal Slideshow Module--
-
-There is an optional photo slideshow module, not installed by default, see the documentation in slideshow/README.
+Slideshow: libx11-dev libecpg-dev xli
 
 
--Further Documentation-
+- Installing Popularity -
+
+Make and install both music and photo shufflers: make && sudo make install
+
+There are targets in the Makefiles to build the common files, player, and slideshow modules independently if you only want to install one of the two.
+
+
+- Database Setup -
+
+Create a new Postgres database and load the schema and procedure SQL files in /usr/local/share/popularity/
+
+One database for one "collection". For example music and photos get different databases.
+
+You may also want to set up a .pgpass file.
+
+
+- Probability Distribution Cache Files -
+
+After importing your files you need to use popularity_mkdist to build a cache file of the probability distribution, e.g. "popularity_mkdist music_cache.dist musicdb@dbserver".
+
+Set a cron job to periodically (like daily) rebuild this file.
+
+
+- Running Popularity -
+
+The main commands are popularity_player, e.g. "popularity_player musicdb@dbserver music_cache.dist", and popularity_slideshow, e.g. "popularity_slideshow photosdb@dbserver photos_cache.dist"
+
+(The Slideshow module uses the root window so your desktop or window manager may interfere - you may need to try a simple X session with icewm or 9wm).
+
+
+- Further Documentation -
 
 Documentation for Popularity is in POSIX man pages. Once Popularity is installed, type "man popularity" at the command prompt for the main index page. The manual pages both tell you how to get started using Popularity, and document Popularity's main commands.
 

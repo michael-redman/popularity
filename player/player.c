@@ -240,6 +240,7 @@ char play(PGconn *pg_conn){
 				|| !strcasecmp(&path[strlen(path)-4],".mp4")
 				|| !strcasecmp(&path[strlen(path)-4],".mov")
 				|| !strcasecmp(&path[strlen(path)-4],".vob")
+				|| !strcasecmp(&path[strlen(path)-5],".webm")
 				|| !strcasecmp(&path[strlen(path)-4],".wmv"))
 			{	snprintf_exit_status=snprintf(
 					path_url,
