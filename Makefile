@@ -6,7 +6,7 @@ SHARED_LIB_EXT?=so
 
 PROGS=entropy clear_dead_paths print_new_paths
 #SCRIPTS=focuser_bstep libpq_connect_string rebalance
-SQL=known_paths_count.plpgsql post_delta.plpgsql
+SQL=count_estimate.plpgsql known_paths_count.plpgsql post_delta.plpgsql
 MAN1=import.1 clear_dead_paths.1
 
 LIBPOPULARITY=libpopularity.$(SHARED_LIB_EXT)
@@ -67,8 +67,8 @@ install_common:
 	install -m 0644 $(LIBPOPULARITY) /usr/local/lib/$(LIBPOPULARITY)
 	mkdir -p /usr/local/include
 	install -m 0644 popularity.h /usr/local/include/popularity.h
-	mkdir -p /usr/local/share/popularity/common/sql
-	for file in $(SQL); do install -m 0644 $$file /usr/local/share/popularity/common/sql/$$file; done
+	install -d -m 0755 sql /usr/local/share/popularity/common/sql
+	for file in $(SQL); do install -m 0644 sql/$$file /usr/local/share/popularity/common/sql/$$file; done
 	mkdir -p /usr/local/share/popularity/common/doc
 	for doc in COPYRIGHT LICENSE README; do install -m 0644 $$doc /usr/local/share/popularity/common/doc/$$doc; done
 	mkdir -p $(MAN_PATH)/man1

@@ -28,23 +28,24 @@ EXEC SQL WHENEVER SQLWARNING CALL SQLPRINT;
 extern void fetch_counts_ecpg(unsigned int *, unsigned int *);
 
 int despool
-	(	const unsigned int spool_count,
+	(	const unsigned int spool_count, //no longer needed, was previously used in logic for selecting random row
 		char * hash,
 		float * display_time,
 		float * delta_time)
 	{	EXEC SQL BEGIN DECLARE SECTION;
 			float _display_time, _delta_time;
-			unsigned int _spool_count;
 			int ind;
 			char _hash[2*SHA_DIGEST_LENGTH+1],*ctid=NULL;
 			EXEC SQL END DECLARE SECTION;
-			_spool_count=spool_count;
 		EXEC SQL BEGIN;
 		EXEC SQL
 			SELECT CTID INTO :ctid :ind FROM SPOOL
-			OFFSET (FLOOR(RANDOM()*:_spool_count)) LIMIT 1;
+			tablesample system(least(ceiling(current_setting('block_size')::real/pg_relation_size('spool')*100),100)) order by random() limit 1;
+		//(Use tablesample to get 1 random block from the table and then randomly order the rows in that block - 1 block takes up 1/(nblocks_in_table)*100 percent of the table)
 		if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
-		if (ind<0) { EXEC SQL COMMIT; if(ctid) free(ctid); return -1; }
+		if	(	ind<0
+				|| !ctid //sometimes ctid null even though indicator not negative
+			) { EXEC SQL COMMIT; if(ctid) free(ctid); return -1; }
 		EXEC SQL
 			SELECT hash,display_time,delta_time
 			INTO :_hash, :_display_time, :_delta_time

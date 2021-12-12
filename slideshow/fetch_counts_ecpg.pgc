@@ -26,7 +26,7 @@ void fetch_counts_ecpg(unsigned int * pool_count, unsigned int * spool_count){
 		slow query??? 
 	EXEC SQL SELECT COUNT(*) INTO :spool_count_ FROM SPOOL WHERE EXISTS (SELECT * FROM PHOTOS WHERE PHOTOS.HASH=SPOOL.HASH AND PATH IS NOT NULL);
 		if you assume the spool contains only current photos you save a lot of computation: */
-	EXEC SQL SELECT COUNT(*) INTO :spool_count_ FROM SPOOL;
+	EXEC SQL SELECT count_estimate('spool') INTO :spool_count_;
 	if(sqlca.sqlcode<0) exit(EXIT_FAILURE);
 	*spool_count=spool_count_;
 	EXEC SQL COMMIT;

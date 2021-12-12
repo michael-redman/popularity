@@ -1,17 +1,17 @@
 drop function if exists despool();
 create or replace function
-	despool (out hash character(40), out delta integer)
+	despool (out _hash character(40), out _delta integer)
 	returns record
 	as	$TEXT$
 		<<block0>>
-		declare _oid oid;
-		begin	select oid into _oid from spool order by random() limit 1;
+		declare _ctid tid;
+		begin	select ctid, hash, delta into _ctid,_hash,_delta from spool tablesample system(least(ceiling(current_setting('block_size')::real/pg_relation_size('spool')*100),100)) order by random() limit 1;
+			--(Sample 1 block and then randomize rows in that block. 1 block takes up 1/nblocks*100 percent of the table)
 			if	not found
-				then	hash='Z';
+				then	_hash='Z';
 					return;
 					end if;
-			select spool.hash,spool.delta into hash, delta from spool where oid=_oid;
-			delete from spool where oid=_oid;
+			delete from spool where ctid=_ctid;
 			return;
 		end;
 		$TEXT$

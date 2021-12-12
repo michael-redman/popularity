@@ -1,0 +1,26 @@
+drop function if exists count_estimate(text);
+create or replace function
+	count_estimate
+	(_relname text)
+	returns bigint
+	as	$TEXT$
+		<<block0>>
+		declare _count bigint;
+		begin	 SELECT	(CASE WHEN reltuples < 0 THEN NULL       -- never vacuumed
+				WHEN relpages = 0 THEN bigint '0'  -- empty table
+				ELSE reltuples / relpages END
+			* pg_relation_size(_relname) / pg_catalog.current_setting('block_size')::int)::bigint into _count from pg_class where relname=_relname;
+		if _count is not null then return _count; end if;
+		vacuum _relname;
+		SELECT	(CASE WHEN reltuples < 0 THEN NULL       -- never vacuumed
+				WHEN relpages = 0 THEN bigint '0'  -- empty table
+				ELSE reltuples / relpages END
+			* pg_relation_size(_relname) / pg_catalog.current_setting('block_size')::int)::bigint into _count from pg_class where relname=_relname;
+		return _count;
+		end;
+		$TEXT$
+	language plpgsql;
+
+--https://stackoverflow.com/questions/7943233/fast-way-to-discover-the-row-count-of-a-table-in-postgresql
+
+--IN GOD WE TRVST.
