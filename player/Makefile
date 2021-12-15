@@ -37,7 +37,7 @@ install:
 	for doc in COPYRIGHT LICENSE README; do install -m 0644 $$doc /usr/local/share/popularity/player/doc/$$doc; done
 	cp -a schema /usr/local/share/popularity/player/
 	mkdir -p /usr/local/share/popularity/player/sql
-	for file in $(SQL); do install -m 0644 $$file /usr/local/share/popularity/player/sql/$$file; done
+	for file in $(SQL); do install -m 0644 sql/$$file /usr/local/share/popularity/player/sql/$$file; done
 	mkdir -p $(MAN_PATH)/man1
 	mkdir -p $(MAN_PATH)/man7
 	install -m 0644 player.7 $(MAN_PATH)/man7/popularity-player.7

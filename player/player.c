@@ -169,7 +169,7 @@ static int despool(PGconn *pg_conn)
 	if	(!PQntuples(pg_result))
 		{ AT; PQclear(pg_result); return 1; }
 	if	(!strcmp(PQgetvalue(pg_result,0,0),"Z"))
-		{ PQclear(pg_result); return 2; }
+		{ PQclear(pg_result); fputs("despool returned null\n",stderr); return 2; }
 	strncpy(hash,PQgetvalue(pg_result,0,0),2*SHA_DIGEST_LENGTH);
 	if	(sscanf(PQgetvalue(pg_result,0,1),"%d",&delta)!=1)
 		{	fputs("failed reading delta from spool\n",stderr); AT;

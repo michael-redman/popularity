@@ -1,0 +1,27 @@
+drop function if exists despool();
+create or replace function
+	despool (out _hash character(40),
+		out _display_time float,
+		out _delta_time float)
+	returns record
+	as	$TEXT$
+		<<block0>>
+		declare _ctid tid;
+		begin	--(Sample 1 block and then randomize rows in that block. 1 block takes up 1/nblocks*100 percent of the table)
+			select ctid, hash, display_time, delta_time into _ctid,_hash,_display_time,_delta_time from spool tablesample system(least(ceiling(current_setting('block_size')::real/pg_relation_size('spool')*100),100)) order by random() limit 1;
+			if	not found
+				then	select ctid into _ctid from spool limit 1;
+					if	not found
+						then	return;
+							end if;
+					_ctid=null;
+					while _ctid is null loop
+						select ctid, hash, display_time, delta_time into _ctid,_hash,_display_time,_delta_time from spool tablesample system(least(ceiling(current_setting('block_size')::real/pg_relation_size('spool')*100),100)) order by random() limit 1;
+						end loop;
+				end if;
+			delete from spool where ctid=_ctid;
+			return;
+		end;
+		$TEXT$
+	language plpgsql;
+--IN GOD WE TRVST.
