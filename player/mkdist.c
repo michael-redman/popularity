@@ -123,7 +123,7 @@ int main(int argc, char ** argv){
 			PQclear(pg_result); goto close_cursor; }*/
 	PQclear(pg_result);
 	//node.cumul_density+=r_to_rplus(popularity*length+age/pool_count);
-	node.cumul_density+=r_to_rplus(popularity*length+avg_votes*avg_length*avg_time_since_last_vote/age);
+	node.cumul_density+=r_to_rplus(popularity*length+avg_votes*avg_length*avg_time_since_last_vote/age)/length;
 	if	(fwrite(&node,sizeof(node),1,distfile)!=1)
 		{ exit_status|=1; perror("fwrite"); AT; goto close_cursor; }
 	goto cursor_loop;

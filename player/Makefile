@@ -34,7 +34,7 @@ player: player.c enspool.c enspool.h pglisten.c
 install:
 	for prog in $(PROGS) $(SCRIPTS); do install -m 0755 $$prog /usr/local/bin/popularity_$$prog; done
 	mkdir -p /usr/local/share/popularity/player/doc
-	for doc in COPYRIGHT LICENSE README; do install -m 0644 $$doc /usr/local/share/popularity/player/doc/$$doc; done
+	for doc in README; do install -m 0644 $$doc /usr/local/share/popularity/player/doc/$$doc; done
 	cp -a schema /usr/local/share/popularity/player/
 	mkdir -p /usr/local/share/popularity/player/sql
 	for file in $(SQL); do install -m 0644 sql/$$file /usr/local/share/popularity/player/sql/$$file; done
