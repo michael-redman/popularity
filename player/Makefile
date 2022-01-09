@@ -23,7 +23,7 @@ clean:
 	ecpg $<
 
 player_import: import.c ../sha1_of_file.c
-	cc $(CFLAGS) -o $@ import.c ../sha1_of_file.c $(PQ_CFLAGS) $(PQ_LDFLAGS) -lcrypto -lavformat
+	cc $(CFLAGS) -o $@ import.c ../sha1_of_file.c $(PQ_CFLAGS) $(PQ_LDFLAGS) -lcrypto
 
 player_mkdist: mkdist.c
 	cc -o $@ $< $(CPPFLAGS) $(CFLAGS) $(PQ_CFLAGS) $(LDFLAGS) $(PQ_LDFLAGS) -lm -lpopularity

@@ -37,7 +37,7 @@ int main(int argc, char ** argv){
 	int exit_status=0, iterator;
 	PGconn *pg_conn;
 	PGresult *pg_result;
-	double popularity, avg_votes, avg_time_since_last_vote, age;
+	double popularity, age;
 	long pool_count, set_count;
 	//double (*wf)(double,float);
 	struct dist_elem node;
@@ -65,24 +65,24 @@ int main(int argc, char ** argv){
 	if	(sscanf(PQgetvalue(pg_result,0,0),"%ld",&pool_count)!=1)
 		{	exit_status|=1; AT;
 			PQclear(pg_result); goto label1; }
-	avg_votes=strtod(PQgetvalue(pg_result,0,1),NULL);
+	/*avg_votes=strtod(PQgetvalue(pg_result,0,1),NULL);
 	if	(errno==EINVAL || errno==ERANGE)
 		{	exit_status|=1;
 			perror("mkdist: could not read avg_votes"); AT;
-			PQclear(pg_result); goto label1; }
+			PQclear(pg_result); goto label1; }*/
 	//fprintf(stderr,"mkdist: avg_votes: %lf\n",avg_votes);
-	avg_time_since_last_vote=strtod(PQgetvalue(pg_result,0,2),NULL);
+	/*avg_time_since_last_vote=strtod(PQgetvalue(pg_result,0,2),NULL);
 	if	(errno==EINVAL || errno==ERANGE)
 		{	exit_status|=1;
 			perror("mkdist: could not read avg_time_since_last_vote"); AT;
-			PQclear(pg_result); goto label1; }
+			PQclear(pg_result); goto label1; } */
 	//fprintf(stderr,"mkdist: avg_time_since_last_vote: %lg\n",avg_time_since_last_vote);
 	pg_result=PQexec(pg_conn,"BEGIN");
 	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
 		{	exit_status|=1; SQLERR; AT;
 			PQclear(pg_result); goto label1; }
 	PQclear(pg_result);
-	pg_result=PQexec(pg_conn,"DECLARE foo CURSOR FOR select hash, votes, extract(epoch from now()-import_time), coalesce(count,1) from pool left join set_counts_cache on pool.set=set_counts_cache.set where path is not null;");
+	pg_result=PQexec(pg_conn,"DECLARE foo CURSOR FOR select hash, votes, extract(epoch from now()-last_vote_time), coalesce(count,1) from pool left join set_counts_cache on pool.set=set_counts_cache.set where path is not null;");
 	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
 		{	exit_status|=1; SQLERR; AT;
 			PQclear(pg_result); goto finish_transaction; }
@@ -115,8 +115,8 @@ int main(int argc, char ** argv){
 			fprintf(stderr,"mkdist: could not get file_age() for %s\n",PQgetvalue(pg_result,0,4)); AT;
 			PQclear(pg_result); goto close_cursor; }*/
 	PQclear(pg_result);
-	//node.cumul_density+=r_to_rplus(popularity*length+age/pool_count)/sqrt(set_count);
-	node.cumul_density+=r_to_rplus((popularity+avg_votes*avg_time_since_last_vote/age)/sqrt(set_count));
+	node.cumul_density+=r_to_rplus(popularity+age/pool_count)/sqrt(set_count); //Stirrer - age is time since last vote - in photos DB popularity is upvote display time so this is dimensionally consistent
+	//node.cumul_density+=r_to_rplus(popularity+avg_votes*avg_time_since_last_vote/age)/sqrt(set_count); //Age is time since import - Newness bonus
 	if	(fwrite(&node,sizeof(node),1,distfile)!=1)
 		{ exit_status|=1; perror("fwrite"); AT; goto close_cursor; }
 	goto cursor_loop;

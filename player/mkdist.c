@@ -37,7 +37,7 @@ int main(int argc, char ** argv){
 	int exit_status=0, iterator;
 	PGconn *pg_conn;
 	PGresult *pg_result;
-	double popularity, avg_votes, avg_time_since_last_vote, avg_length, age;
+	double popularity, avg_time_since_last_vote, age;
 	long pool_count;
 	//double (*wf)(double,float);
 	struct dist_elem node;
@@ -67,11 +67,11 @@ int main(int argc, char ** argv){
 		{	exit_status|=1; AT;
 			PQclear(pg_result); goto label1; }
 	//fprintf(stderr,"mkdist: count: %ld\n",pool_count);
-	avg_votes=strtod(PQgetvalue(pg_result,0,1),NULL);
+	/*avg_votes=strtod(PQgetvalue(pg_result,0,1),NULL);
 	if	(errno==EINVAL || errno==ERANGE)
 		{	exit_status|=1;
 			perror("mkdist: could not read avg_votes"); AT;
-			PQclear(pg_result); goto label1; }
+			PQclear(pg_result); goto label1; }*/
 	//fprintf(stderr,"mkdist: avg_votes: %lf\n",avg_votes);
 	avg_time_since_last_vote=strtod(PQgetvalue(pg_result,0,2),NULL);
 	if	(errno==EINVAL || errno==ERANGE)
@@ -79,18 +79,18 @@ int main(int argc, char ** argv){
 			perror("mkdist: could not read avg_time_since_last_vote"); AT;
 			PQclear(pg_result); goto label1; }
 	//fprintf(stderr,"mkdist: avg_time_since_last_vote: %lg\n",avg_time_since_last_vote);
-	avg_length=strtod(PQgetvalue(pg_result,0,3),NULL);
+	/*avg_length=strtod(PQgetvalue(pg_result,0,3),NULL);
 	if	(errno==EINVAL || errno==ERANGE)
 		{	exit_status|=1;
 			perror("mkdist: could not read avg_length"); AT;
-			PQclear(pg_result); goto label1; }
+			PQclear(pg_result); goto label1; }*/
 	//fprintf(stderr,"mkdist: avg_length: %lg\n",avg_length);
 	pg_result=PQexec(pg_conn,"BEGIN");
 	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
 		{	exit_status|=1; SQLERR; AT;
 			PQclear(pg_result); goto label1; }
 	PQclear(pg_result);
-	pg_result=PQexec(pg_conn,"DECLARE foo CURSOR FOR select hash, duration, votes, extract(epoch from now()-import_time) from pool where path is not null;");
+	pg_result=PQexec(pg_conn,"DECLARE foo CURSOR FOR select hash, duration, votes, extract(epoch from now()-last_vote_time) from pool where path is not null;");
 	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
 		{	exit_status|=1; SQLERR; AT;
 			PQclear(pg_result); goto finish_transaction; }
@@ -122,8 +122,10 @@ int main(int argc, char ** argv){
 			fprintf(stderr,"mkdist: could not get file_age() for %s\n",PQgetvalue(pg_result,0,4)); AT;
 			PQclear(pg_result); goto close_cursor; }*/
 	PQclear(pg_result);
-	//node.cumul_density+=r_to_rplus(popularity*length+age/pool_count);
-	node.cumul_density+=r_to_rplus(popularity*length+avg_votes*avg_length*avg_time_since_last_vote/age)/length;
+	//node.cumul_density+=r_to_rplus(popularity*length+age/pool_count); //Original "stirrer" - was dimensionally consistent. In this one "age" is time since last vote
+	//node.cumul_density+=r_to_rplus(popularity*length+avg_votes*avg_length*avg_time_since_last_vote/age)/length; //Here "age" is time since import not since last vote. It was a nice idea to make the distribution work per unit playback time instead of per pick by dividing out the file play lengths, but so far reading play durations has been unreliable
+	//node.cumul_density+=r_to_rplus(popularity+avg_votes*avg_time_since_last_vote/age); //Age is time since import - Newness bonus, no lengths - The newness bonus was a nice idea but as implemented maybe a little too big of bonus? - maybe divide by (age+avg_time_since_last_vote)
+	node.cumul_density+=r_to_rplus(popularity+age/avg_time_since_last_vote); //Age is time since last vote - Stirrer, no lengths - in music DB popularity is upvotes not time so this is dimensionally consistent
 	if	(fwrite(&node,sizeof(node),1,distfile)!=1)
 		{ exit_status|=1; perror("fwrite"); AT; goto close_cursor; }
 	goto cursor_loop;
