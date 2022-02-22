@@ -122,11 +122,7 @@ int main(int argc, char ** argv){
 			fprintf(stderr,"mkdist: could not get file_age() for %s\n",PQgetvalue(pg_result,0,4)); AT;
 			PQclear(pg_result); goto close_cursor; }*/
 	PQclear(pg_result);
-	//node.cumul_density+=r_to_rplus(popularity*length+age/pool_count); //Original "stirrer" - was dimensionally consistent. In this one "age" is time since last vote
-	//node.cumul_density+=r_to_rplus(popularity*length+avg_votes*avg_length*avg_time_since_last_vote/age)/length; //Here "age" is time since import not since last vote. It was a nice idea to make the distribution work per unit playback time instead of per pick by dividing out the file play lengths, but so far reading play durations has been unreliable
-	//node.cumul_density+=r_to_rplus(popularity+avg_votes*avg_time_since_last_vote/age); //Age is time since import - Newness bonus, no lengths - The newness bonus was a nice idea but as implemented maybe a little too big of bonus? - maybe divide by (age+avg_time_since_last_vote)
-	//We should have: node.cumul_density+=r_to_rplus(popularity*length+age/pool_count)/length; with age as time since last vote - in music DB popularity is upvotes not time so this is dimensionally consistent - however since reading lengths was unreliable we have:
-	node.cumul_density+=r_to_rplus(popularity+age/pool_count); //Not dimensionally consistent, and missing length factor reduces importance of popularity term vs stirring term.
+	node.cumul_density+=r_to_rplus(popularity*length+age/pool_count)/length;  //popularity is up-votes (count, dimensionless), length is play duration (seconds), age is time since last vote (seconds), pool_count is a count, dimensionless.
 	if	(fwrite(&node,sizeof(node),1,distfile)!=1)
 		{ exit_status|=1; perror("fwrite"); AT; goto close_cursor; }
 	goto cursor_loop;

@@ -4,7 +4,7 @@
 #define _GNU_SOURCE
 #endif
 
-//#include <libavformat/avformat.h>
+#include <libavformat/avformat.h>
 #include <libpq-fe.h>
 #include <limits.h>
 #include <openssl/sha.h>
@@ -18,7 +18,7 @@
 
 extern char sha1_of_file (	const char * const path,
 				unsigned char sum[SHA_DIGEST_LENGTH]);
-/*
+
 char length(char * file, float * length){
 	AVFormatContext* pFormatCtx = avformat_alloc_context();
 	if	(!pFormatCtx)
@@ -38,17 +38,17 @@ char length(char * file, float * length){
 	*length = pFormatCtx->duration*1.0/AV_TIME_BASE;
 	avformat_close_input(&pFormatCtx);
 	avformat_free_context(pFormatCtx);
-	return 0; } */
+	return 0; }
 
 int main(int argc, char ** argv){
 	PGconn *db;
 	PGresult *result;
 	unsigned char hash_binary[SHA_DIGEST_LENGTH];
-	char *path=NULL, hash[2*SHA_DIGEST_LENGTH+1], length_s[]="0";
+	char *path=NULL, hash[2*SHA_DIGEST_LENGTH+1], *length_s;
 	unsigned int i;
 	int count,exit_status=0;
 	size_t path_len=0;
-	//float length_fl;
+	float length_fl;
 	if	(argc!=2)
 		{ fputs(USE "\n", stderr); return 1; }
 	db=PQconnectdb(argv[1]);
@@ -78,17 +78,17 @@ int main(int argc, char ** argv){
 		for	(i=0;i<SHA_DIGEST_LENGTH;i++)
 			if	(sprintf(&hash[2*i],"%02hhx",hash_binary[i])!=2)
 				{ exit_status=1; AT_ERR; goto final0; }
-		/*if	(length(path,&length_fl))
+		if	(length(path,&length_fl))
 			{ AT_ERR; exit_status|=1; goto final0; }
 		if	(asprintf(&length_s,"%f",length_fl)==-1)
 			{ AT_ERR; exit_status|=1; goto final0; }
-		fprintf(stderr,"read length %s\n",length_s);*/
+		fprintf(stderr,"read length %s %s\n",length_s,path);
 		result=PQexecParams(db,
 			"select import_upsert($1,$2,$3)",
 			3, NULL,
 			(char const * const []){ hash, path, length_s }, NULL,
 			(const int []){ 0,0,0 }, 0);
-		//free(length_s);
+		free(length_s);
 		if	(PQresultStatus(result)!=PGRES_TUPLES_OK)
 			{	exit_status|=1;
 				fputs(PQerrorMessage(db),stderr); AT_ERR;
