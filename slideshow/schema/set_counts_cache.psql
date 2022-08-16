@@ -1,3 +1,4 @@
+drop table if exists set_counts_cache;
 CREATE TABLE public.set_counts_cache (
     set integer NOT NULL unique,
     count integer NOT NULL

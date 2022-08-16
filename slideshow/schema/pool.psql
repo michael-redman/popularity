@@ -1,3 +1,4 @@
+drop table if exists pool;
 CREATE TABLE pool (
 	hash character(40) NOT NULL unique,
 	"path" text unique,

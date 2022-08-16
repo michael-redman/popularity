@@ -1,4 +1,4 @@
-DROP TABLE public.spool;
+DROP TABLE if exists public.spool;
 
 CREATE TABLE spool (
     hash character(40) NOT NULL,

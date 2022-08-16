@@ -168,7 +168,7 @@ static int despool(PGconn *pg_conn)
 		{ SQLERR; AT; PQclear(pg_result); return 1; }
 	if	(!PQntuples(pg_result))
 		{ AT; PQclear(pg_result); return 1; }
-	if	(!strcmp(PQgetvalue(pg_result,0,0),"Z"))
+	if	(PQgetisnull(pg_result,0,0))
 		{ PQclear(pg_result); fputs("despool returned null\n",stderr); return 2; }
 	strncpy(hash,PQgetvalue(pg_result,0,0),2*SHA_DIGEST_LENGTH);
 	if	(sscanf(PQgetvalue(pg_result,0,1),"%d",&delta)!=1)
