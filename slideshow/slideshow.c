@@ -1,8 +1,8 @@
-//Use: popularity_slideshow photos@pg .cache/popularity/photos.dist
+//Use: popularity_slideshow 'host=abc dbname=def' .cache/popularity/photos.dist
 
-EXEC SQL WHENEVER SQLERROR CALL SQLPRINT;
-EXEC SQL WHENEVER SQLWARNING CALL SQLPRINT;
-
+#define _GNU_SOURCE
+#include <errno.h>
+#include <libpq-fe.h>
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -23,84 +23,80 @@ EXEC SQL WHENEVER SQLWARNING CALL SQLPRINT;
 #define RESOLUTION_NSEC 50000000
 
 #include "at.h"
+#define AT __WHERE__
 #define AT_ERR fputs(AT "\n",stderr);
-
-extern void fetch_counts_ecpg(unsigned int *, unsigned int *);
+#define SQLERR do{ fputs(PQerrorMessage(pg_conn),stderr); }while(0)
 
 int despool
-	(	const unsigned int spool_count, //no longer needed, was previously used in logic for selecting random row
+	(	PGconn * pg_conn,
 		char * hash,
 		float * display_time,
 		float * delta_time)
-	{	EXEC SQL BEGIN DECLARE SECTION;
-			float _display_time, _delta_time;
-			int hash_ind, display_time_ind, delta_time_ind;
-			char _hash[2*SHA_DIGEST_LENGTH+1];
-			EXEC SQL END DECLARE SECTION;
-		EXEC SQL BEGIN;
-		EXEC SQL	SELECT * INTO	:_hash :hash_ind,
-				:_display_time	:display_time_ind,
-				:_delta_time	:delta_time_ind
-				from despool();
-		if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
-		EXEC SQL COMMIT;
-		if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
-		if	(hash_ind<0||!_hash[0])
-			{	fputs("despool() sql returned null\n",stderr);
-				return -1; }
-		fprintf(stderr,"despool: read %s %g %g\n",_hash,_display_time,_delta_time);
-		strcpy(hash,_hash);
-		*display_time=_display_time; *delta_time=_delta_time;
+	{	PGresult * pg_result;
+		pg_result=PQexec(pg_conn,"select * from despool()");
+		if	(PQresultStatus(pg_result)!=PGRES_TUPLES_OK)
+			{	SQLERR; WHERE;
+				PQclear(pg_result); exit(EXIT_FAILURE); }
+		if	(!PQntuples(pg_result))
+			{ PQclear(pg_result); exit(EXIT_FAILURE); }
+		if	(PQgetisnull(pg_result,0,0))
+			{ PQclear(pg_result); return -1; }
+		strncpy(hash,PQgetvalue(pg_result,0,0),2*SHA_DIGEST_LENGTH+1);
+		hash[2*SHA_DIGEST_LENGTH]=0; //should be redundant
+		if	(sscanf(PQgetvalue(pg_result,0,1),"%f",display_time)!=1)
+			{ WHERE; PQclear(pg_result); exit(EXIT_FAILURE); }
+		if	(sscanf(PQgetvalue(pg_result,0,2),"%f",delta_time)!=1)
+			{ WHERE; PQclear(pg_result); exit(EXIT_FAILURE); }
+		PQclear(pg_result);
+		fprintf(stderr,"despool: read %s %g %g\n",hash,*display_time,*delta_time);
 		return 0; }
 
+char get_path(PGconn *pg_conn, const char * const hash, char * path)
+{	PGresult *pg_result;
+	pg_result=PQexecParams(pg_conn,"select path from pool where hash=$1",1,NULL, (char const * const []){ hash }, NULL, NULL, 0);
+	if	(PQresultStatus(pg_result)!=PGRES_TUPLES_OK)
+		{	fputs(PQerrorMessage(pg_conn),stderr); AT_ERR;
+			PQclear(pg_result);
+			return -1 ; }
+	strncpy(path,PQgetvalue(pg_result,0,0),PATH_MAX+1);
+	path[PATH_MAX]=0;
+	PQclear(pg_result);
+	return 0; }
+
 char next
-	(	unsigned int ndists,
+	(	PGconn * pg_conn,
+		unsigned int ndists,
 		char const ** const distfiles,
 		char * hash,
 		float * display_time,
 		float * delta_time,
 		char * path)
-	{	EXEC SQL BEGIN DECLARE SECTION;
-		char _hash[2*SHA_DIGEST_LENGTH+1];
-		VARCHAR _path[PATH_MAX];
-		EXEC SQL END DECLARE SECTION;
-		unsigned int pool_count, spool_count;
-		fetch_counts_ecpg(&pool_count,&spool_count);
+	{	int pool_count, spool_count;
+		if	(fetch_counts(pg_conn,&pool_count,&spool_count))
+			{ WHERE; exit(EXIT_FAILURE); }
 		if(random()/(double)RAND_MAX*(pool_count+spool_count*spool_count)<(spool_count*spool_count))
-			if(!despool(spool_count,hash,display_time,delta_time)){
-				strcpy(_hash,hash);
-				EXEC SQL select path into :_path from pool where hash = :_hash;
-				if	(sqlca.sqlcode<0)
-					{	fprintf(
-							stderr,
-							"ERROR: Could not retrieve path for %s\n",
-							_hash);
-						 exit(EXIT_FAILURE); }
-				EXEC SQL COMMIT;
-				if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
-				strcpy(path,_path.arr);
-				return 0; }
+			if	(!despool(pg_conn,hash,display_time,delta_time)) //exits prog on err returns nonzero on empty spool
+				{	if	(get_path(pg_conn,hash,path))
+						{ WHERE; exit(EXIT_FAILURE); }
+					return 0; }
 		if	(random_from_distfiles(ndists,distfiles,hash))
 			{ AT_ERR; return 1; }
-		strcpy(_hash,hash);
-		EXEC SQL SELECT PATH INTO :_path FROM pool WHERE hash=:_hash;
-		if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
-		EXEC SQL COMMIT;
-		if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
-		strcpy(path,_path.arr);
+		if	(get_path(pg_conn,hash,path))
+			{ WHERE; exit(EXIT_FAILURE); }
 		*display_time=random_time(pool_count,spool_count);
 		*delta_time=0;
 		return 0; }
 
 void handlequeuedevents
 	(
+		PGconn * pg_conn,
 		Display *d,
 		char * hash,
 		float * display_time,
 		float * delta_time,
 		int * die, int waste)
 	{
-		unsigned int pool_count, spool_count;
+		int pool_count, spool_count;
 		XEvent e;
 		XKeyEvent k;
 		KeySym ks;
@@ -114,7 +110,7 @@ void handlequeuedevents
 			XLookupString(&k,c,1,&ks,&cs);
 			if(c[0]=='q') *die=1;
 			if(waste) continue;
-			fetch_counts_ecpg(&pool_count, &spool_count);
+			fetch_counts(pg_conn,&pool_count, &spool_count);
 			interval=random_time(pool_count,spool_count);
 			switch(c[0]){
 			case '-':
@@ -130,7 +126,7 @@ void handlequeuedevents
 					*display_time+=interval;
 					*delta_time+=interval;
 				}else*/
-				enspool(hash,interval,interval);
+				enspool(pg_conn,hash,interval,interval);
 				break;
 			/* case '+': request_from_same_scene(hash); */ }}}
 
@@ -223,13 +219,25 @@ void paint(char * path){
 	fprintf(stderr,__FILE__": error at line %u\n",__LINE__); \
 	exit(EXIT_FAILURE); }while(0);
 
+char post_delta(PGconn *pg_conn, const char * const hash, const float delta_time)
+{	char * delta_time_s;
+	PGresult *pg_result;
+	if	(asprintf(&delta_time_s,"%f",delta_time)==-1)
+		{ AT_ERR; return -1; }
+	pg_result=PQexecParams(pg_conn,"select post_delta($1,$2)",2,NULL, (char const * const []){ hash, delta_time_s }, NULL, NULL, 0);
+	free(delta_time_s);
+	if	(PQresultStatus(pg_result)!=PGRES_TUPLES_OK)
+		{	fputs(PQerrorMessage(pg_conn),stderr); AT_ERR;
+			PQclear(pg_result);
+			return -1 ; }
+	PQclear(pg_result);
+	return 0; }
+
 int main(int argc, char** argv){
-	EXEC SQL BEGIN DECLARE SECTION;
-	char * db = argv[1];
-	char hash[2*SHA_DIGEST_LENGTH+1];
+	char hash[2*SHA_DIGEST_LENGTH+1], *delta_time_s;
 	float delta_time=0;
-	int result, ind;
-	EXEC SQL END DECLARE SECTION;
+	PGconn *pg_conn;
+	PGresult *pg_result;
 	Display * d;
 	Window w;
 	int dieflag=0;
@@ -246,20 +254,21 @@ int main(int argc, char** argv){
 	if (XMapWindow(d,w)==BadWindow) DIE;
 	if (XSelectInput(d,w,KeyPress)==BadWindow) DIE;
 	
-	EXEC SQL CONNECT TO :db;
-	/* ECPGdebug(1,stderr); */
-	
+	pg_conn=PQconnectdb(argv[1]);
+	if	(PQstatus(pg_conn)!=CONNECTION_OK)
+		{ fputs(PQerrorMessage(pg_conn),stderr); AT_ERR; return 1; }
+
 	srandom(time(NULL));
 	rqt.tv_sec=0;
 	rqt.tv_nsec=RESOLUTION_NSEC;
 	
 	while(1){
-		if	(next(	argc-2,(char const ** const)&(argv[2]),hash,
+		if	(next(	pg_conn,argc-2,(char const ** const)&(argv[2]),hash,
 				&display_time,&delta_time,path))
 			{ AT_ERR; return 1; }
 		printf("%g %g %s %s\n",display_time,delta_time,hash,path);
 		paint(path);
-		handlequeuedevents(d,hash, &display_time, &delta_time, &dieflag,1);
+		handlequeuedevents(pg_conn,d,hash, &display_time, &delta_time, &dieflag,1);
 		while (display_time>0) {
 			if	(nanosleep(&rqt,&rmt))
 				{	if	(errno!=EINTR)
@@ -269,25 +278,23 @@ int main(int argc, char** argv){
 						(float)(rqt.tv_nsec-rmt.tv_nsec)
 						/(float)NSECS_IN_SEC; }
 				else 	display_time-=rqt.tv_sec+(float)rqt.tv_nsec/(float)NSECS_IN_SEC;
-			handlequeuedevents(d,hash, &display_time, &delta_time, &dieflag,0);
+			handlequeuedevents(pg_conn,d,hash, &display_time, &delta_time, &dieflag,0);
 			if(dieflag) goto END; }
 		if	(delta_time!=0)
-			{	EXEC SQL BEGIN;
-				EXEC SQL
-					select post_delta(:hash,:delta_time)
-					into :result :ind;
-				if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
-				EXEC SQL COMMIT;
-				if (sqlca.sqlcode<0) exit(EXIT_FAILURE); }}
-	END:	if(display_time>0) enspool(hash,display_time,delta_time);
+			{	if	(asprintf(&delta_time_s,"%f",delta_time)==-1)
+					{ AT_ERR; return -1; }
+				pg_result=PQexecParams(pg_conn,"select post_delta($1,$2)",2,NULL, (char const * const []){ hash, delta_time_s }, NULL, NULL, 0);
+				free(delta_time_s);
+				if	(PQresultStatus(pg_result)!=PGRES_TUPLES_OK)
+					{	fputs(PQerrorMessage(pg_conn),stderr); AT_ERR;
+						PQclear(pg_result);
+						return -1 ; }}}
+	END:	if(display_time>0)
+			{if	(enspool(pg_conn,hash,display_time,delta_time))
+				{ AT_ERR; exit(EXIT_FAILURE); }}
 		else if	(delta_time!=0)
-			{	EXEC SQL BEGIN;
-				EXEC SQL
-					select post_delta(:hash,:delta_time)
-					into :result :ind;
-				if (sqlca.sqlcode<0) exit(EXIT_FAILURE);
-				EXEC SQL COMMIT;
-				if (sqlca.sqlcode<0) exit(EXIT_FAILURE); }
-		EXEC SQL DISCONNECT;
+			{	if	(post_delta(pg_conn,hash,delta_time)!=0)
+					{ AT_ERR; return -1; } }
+		PQfinish(pg_conn);
 		XCloseDisplay(d);
 		return 0; }

@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "at.h"
+#define AT __WHERE__
 #define AT_ERR fputs(AT "\n",stderr)
 
 extern char sha1_of_file (	const char * const path,

@@ -2,8 +2,8 @@ include Version.mk
 CFLAGS+=-DVERSION=\"$(VERSION)\"
 
 CFLAGS+=-Wall -g -fstack-protector -I ..
-ECPG_CFLAGS?=-I /usr/include/postgresql
-ECPG_LDFLAGS?=-L /usr/lib/postgresql -lecpg
+PQ_CFLAGS?=-I /usr/include/postgresql
+PQ_LDFLAGS?=-L /usr/lib/postgresql -lpq
 LDFLAGS?=-L ..
 PQ_CFLAGS?=-I /usr/include/postgresql
 PQ_LDFLAGS?=-L /usr/lib/postgresql -lpq
@@ -15,7 +15,7 @@ SQL=despool.plpgsql import_upsert.plpgsql
 all: $(PROGS)
 
 clean:
-	rm -f $(PROGS) enspool.c slideshow.c request.c fetch_counts_ecpg.c
+	rm -f $(PROGS)
 
 .SUFFIXES: .c .pgc
 .pgc.c:
@@ -27,11 +27,11 @@ slideshow_import: import.c ../sha1_of_file.c
 slideshow_mkdist: mkdist.c
 	cc $(CFLAGS) -o $@ mkdist.c $(PQ_CFLAGS) $(PQ_LDFLAGS) $(LDFLAGS) -lm -lpopularity
 
-slideshow: slideshow.c enspool.c enspool.h fetch_counts_ecpg.c
-	cc -o $@ -DXLI_PATH=\"$(XLI_PATH)\" slideshow.c enspool.c fetch_counts_ecpg.c $(CFLAGS) $(ECPG_CFLAGS) $(LDFLAGS) $(ECPG_LDFLAGS) -lX11 -lm -lpopularity -lpq
+slideshow: slideshow.c enspool.c enspool.h
+	cc -o $@ -DXLI_PATH=\"$(XLI_PATH)\" slideshow.c enspool.c $(CFLAGS) $(PQ_CFLAGS) $(LDFLAGS) $(PQ_LDFLAGS) -lX11 -lm -lpopularity -lpq
 
-slideshow_request: request.c enspool.c enspool.h fetch_counts_ecpg.c
-	cc -o $@ request.c enspool.c fetch_counts_ecpg.c $(CFLAGS) $(ECPG_CFLAGS) $(LDFLAGS) $(ECPG_LDFLAGS) -lpopularity -lm -lpq
+slideshow_request: request.c enspool.c enspool.h
+	cc -o $@ request.c enspool.c $(CFLAGS) $(PQ_CFLAGS) $(LDFLAGS) $(PQ_LDFLAGS) -lpopularity -lm -lpq
 
 install:
 	for prog in $(PROGS) find_photos; do install -m 0755 $$prog /usr/local/bin/popularity_$$prog; done
