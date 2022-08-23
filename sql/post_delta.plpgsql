@@ -20,36 +20,36 @@ create or replace function
 			average_age double precision;
 			age double precision;
 			popularity double precision;
-		begin	lock table cache;
+		begin	lock table dictionary;
 			if	not exists
-					(select * from cache
-					where name='period')
+					(select * from dictionary
+					where key='cache/average_time_since_last_vote')
 				then	SELECT	AVG(EXTRACT(EPOCH FROM
 						NOW()-LAST_VOTE_TIME))
 						INTO average_age
 						FROM POOL
 						WHERE PATH IS NOT NULL;
-					period =
-						- average_age
-						/ ln( (max_amp-1.0)/max_amp );
-					insert	into cache values
-						('period',period);
-				else	select value into period 
-					from cache where name='period';
+					insert	into dictionary values
+						('cache/average_time_since_last_vote',average_age);
+				else	select value into average_age
+					from dictionary where key='cache/average_time_since_last_vote';
 				end if;
+				period =
+					- average_age
+					/ ln( (max_amp-1.0)/max_amp );
 			--raise notice '%', 'average_age: ' || average_age;
 			--raise notice '%', 'period: ' || period;
 			SELECT	pool.votes,
 				EXTRACT(EPOCH FROM NOW()-LAST_VOTE_TIME)
                 		INTO popularity, age FROM pool
 				WHERE pool.hash=post_delta.hash;
-			raise notice 'post_delta(%', hash || ',' || delta || '): old popularity: ' || popularity || ' age: ' || age;
+			average_age=popularity;
 			popularity=popularity*exp(-age/period)+delta;
 			UPDATE pool
 				SET LAST_VOTE_TIME=NOW(),
 				votes=block0.popularity
 				WHERE pool.hash=post_delta.hash;
-			raise notice 'post_delta: new popularity: %', block0.popularity;
+			raise notice 'post_delta(%', hash || ',' || delta || '): age: ' || age || ' popularity: ' || average_age || '->' || block0.popularity;
 		end;
 		$TEXT$
 	language plpgsql;

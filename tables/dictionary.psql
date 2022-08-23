@@ -1,0 +1,3 @@
+drop table if exists dictionary;
+create table dictionary(key text not null unique, value text not null);
+--IN GOD WE TRVST.

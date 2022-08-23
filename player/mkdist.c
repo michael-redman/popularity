@@ -43,7 +43,7 @@ int main(int argc, char ** argv){
 	struct dist_elem node;
 	//float strength=1;
 	FILE *distfile;
-	char *query;
+	char *query,*pool_count_s,*avg_age_s;
 	float length=1;
 	/*if	(getopt(argc,argv,"v")=='v')
 		wf=wf_inverse;
@@ -59,7 +59,7 @@ int main(int argc, char ** argv){
 		{	exit_status|=1;
 			SQLERR;
 			AT; goto label0; }
-	pg_result=PQexec(pg_conn,"select count(*) from pool where path is not null");
+	pg_result=PQexec(pg_conn,"select count(*), avg(extract(epoch from now()-last_vote_time)) from pool where path is not null");
 	if	(PQresultStatus(pg_result)!=PGRES_TUPLES_OK)
 		{	exit_status|=1; SQLERR; AT;
 			PQclear(pg_result); goto label1; }
@@ -67,6 +67,12 @@ int main(int argc, char ** argv){
 		{	exit_status|=1; AT;
 			PQclear(pg_result); goto label1; }
 	//fprintf(stderr,"mkdist: count: %ld\n",pool_count);
+	if	(!(pool_count_s=strdup(PQgetvalue(pg_result,0,0))))
+		{	exit_status|=1; AT;
+			PQclear(pg_result); goto label1; }
+	if	(!(avg_age_s=strdup(PQgetvalue(pg_result,0,1))))
+		{	exit_status|=1; AT;
+			PQclear(pg_result); goto label1; }
 	/*avg_votes=strtod(PQgetvalue(pg_result,0,1),NULL);
 	if	(errno==EINVAL || errno==ERANGE)
 		{	exit_status|=1;
@@ -85,6 +91,18 @@ int main(int argc, char ** argv){
 			perror("mkdist: could not read avg_length"); AT;
 			PQclear(pg_result); goto label1; }*/
 	//fprintf(stderr,"mkdist: avg_length: %lg\n",avg_length);
+	PQclear(pg_result);
+	pg_result=PQexecParams(pg_conn,"insert into dictionary values('cache/known_paths_count',$1) on conflict(key) do update set value=excluded.value;",1,NULL,(char const * const []){pool_count_s},NULL,NULL,0); //This value gets used when the pool and spool counts are inputs to the probability logic for drawing from spool vs distfiles and for speeding/slowing display initerval
+	free(pool_count_s);
+	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
+		{	exit_status|=1; SQLERR; AT;
+			PQclear(pg_result); goto label1; }
+	pg_result=PQexecParams(pg_conn,"insert into dictionary values('cache/average_time_since_last_vote',$1) on conflict(key) do update set value=excluded.value;",1,NULL,(char const * const []){avg_age_s},NULL,NULL,0); //This value gets used by post_delta
+	free(avg_age_s);
+	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
+		{	exit_status|=1; SQLERR; AT;
+			PQclear(pg_result); goto label1; }
+	PQclear(pg_result);
 	pg_result=PQexec(pg_conn,"BEGIN");
 	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
 		{	exit_status|=1; SQLERR; AT;

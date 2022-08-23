@@ -1,3 +1,0 @@
-drop table if exists cache;
-create table cache (name text not null unique, value text not null);
---IN GOD WE TRVST.

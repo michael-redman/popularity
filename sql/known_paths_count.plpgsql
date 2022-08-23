@@ -4,10 +4,10 @@ create or replace function
 	as	$TEXT$
 		<<block0>>
 		begin
-			if	exists (select * from cache where name='known_paths_count')
-				then select value into _count from cache where name='known_paths_count';
+			if	exists (select * from dictionary where key='cache/known_paths_count')
+				then select value into _count from dictionary where key='cache/known_paths_count';
 				else	select count(*) into _count from pool where path is not null;
-					insert into cache values ('known_paths_count',_count);
+					insert into dictionary values ('cache/known_paths_count',_count);
 				end if;
 			return;
 		end;

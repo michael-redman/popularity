@@ -67,6 +67,7 @@ install_common:
 	install -m 0644 $(LIBPOPULARITY) /usr/local/lib/$(LIBPOPULARITY)
 	mkdir -p /usr/local/include
 	install -m 0644 popularity.h /usr/local/include/popularity.h
+	install -d -m 0755 tables /usr/local/share/popularity/common/tables
 	install -d -m 0755 sql /usr/local/share/popularity/common/sql
 	for file in $(SQL); do install -m 0644 sql/$$file /usr/local/share/popularity/common/sql/$$file; done
 	mkdir -p /usr/local/share/popularity/common/doc
