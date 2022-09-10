@@ -196,18 +196,6 @@ inline void scrobble(){
 	}
 */
 
-static char log_play_end(PGconn * pg_conn, char const * const hash)
-{
-	#ifdef EXTRA_FEATURES
-	PGresult * pg_result = PQexecParams(pg_conn,
-		"insert into play_log values(now(),$1)",1,NULL,
-		(char const * const[]){ hash }, NULL, (int const[]){0}, 0);
-	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
-		{ SQLERR; AT; PQclear(pg_result); return 1; }
-	PQclear(pg_result);
-	#endif
-	return 0; }
-
 char play(PGconn *pg_conn){
 	char path[PATH_MAX+1], path_url[PATH_MAX+8], *_delta;
 	struct stat stat_struct;
@@ -286,9 +274,9 @@ char play(PGconn *pg_conn){
 			if	(PQresultStatus(pg_result)!=PGRES_TUPLES_OK)
 				{ SQLERR; AT; return_value|=1; }
 			PQclear(pg_result); }
-	if (return_value) goto play_unlock;
-	if	(log_play_end(pg_conn,hash))
-		{ AT; return_value|=1; }
+		else	if	(update_last_end_time(pg_conn,hash))
+				{ AT; return_value|=1; }
+			//post_delta updates last_end_time so no need to separately do it if delta nonzero
 	play_unlock:
 	if	(pthread_mutex_unlock(&mutex))
 		{ AT; return_value|=1; }

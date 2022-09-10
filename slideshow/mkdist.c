@@ -94,7 +94,7 @@ int main(int argc, char ** argv){
 		{	exit_status|=1; SQLERR; AT;
 			PQclear(pg_result); goto label1; }
 	PQclear(pg_result);
-	pg_result=PQexec(pg_conn,"DECLARE foo CURSOR FOR select hash, votes, extract(epoch from now()-last_vote_time), coalesce(count,1) from pool left join set_counts_cache on pool.set=set_counts_cache.set where path is not null;");
+	pg_result=PQexec(pg_conn,"DECLARE foo CURSOR FOR select hash, votes, extract(epoch from now()-last_end_time), coalesce(count,1) from pool left join set_counts_cache on pool.set=set_counts_cache.set where path is not null;");
 	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
 		{	exit_status|=1; SQLERR; AT;
 			PQclear(pg_result); goto finish_transaction; }

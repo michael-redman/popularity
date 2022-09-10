@@ -83,4 +83,15 @@ char random_from_distfiles
 		{ AT_ERR; return 1; }
 	return 0; }
 
+
+char update_last_end_time(PGconn * pg_conn, char const * const hash)
+{
+	PGresult * pg_result = PQexecParams(pg_conn,
+		"update pool set last_end_time=now() where hash=$1",1,NULL,
+		(char const * const[]){ hash }, NULL, (int const[]){0}, 0);
+	if	(PQresultStatus(pg_result)!=PGRES_COMMAND_OK)
+		{ SQLERR; AT_ERR; PQclear(pg_result); return 1; }
+	PQclear(pg_result);
+	return 0; }
+
 /* IN GOD WE TRVST */

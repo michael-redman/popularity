@@ -5,6 +5,7 @@ CREATE TABLE pool (
 	"set" integer,
 	import_time timestamp not null,
 	votes double precision NOT NULL,
-	"last_vote_time" timestamp NOT NULL);
+	"last_vote_time" timestamp NOT NULL,
+	last_end_time timestamp not null);
 
 --IN GOD WE TRVST.

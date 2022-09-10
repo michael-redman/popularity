@@ -288,13 +288,21 @@ int main(int argc, char** argv){
 				if	(PQresultStatus(pg_result)!=PGRES_TUPLES_OK)
 					{	fputs(PQerrorMessage(pg_conn),stderr); AT_ERR;
 						PQclear(pg_result);
-						return -1 ; }}}
+						return -1 ; }
+				PQclear(pg_result);
+				}
+			else{	//post_delta updates last_end_time
+				if	(update_last_end_time(pg_conn,hash))
+					{ AT_ERR; exit(EXIT_FAILURE); }}
+		}
 	END:	if(display_time>0)
 			{if	(enspool(pg_conn,hash,display_time,delta_time))
 				{ AT_ERR; exit(EXIT_FAILURE); }}
-		else if	(delta_time!=0)
-			{	if	(post_delta(pg_conn,hash,delta_time)!=0)
-					{ AT_ERR; return -1; } }
+		else{	if	(delta_time!=0)
+				{	if	(post_delta(pg_conn,hash,delta_time)!=0)
+						{ AT_ERR; return -1; } }
+				else if	(update_last_end_time(pg_conn,hash))
+					{ AT_ERR; exit(EXIT_FAILURE); }}
 		PQfinish(pg_conn);
 		XCloseDisplay(d);
 		return 0; }

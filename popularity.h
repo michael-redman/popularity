@@ -12,6 +12,7 @@ char file_age(const char * const, time_t *);
 void get_decay_period(const char * const, float *);
 char random_from_dist_file(char const * const, char * const);
 char random_from_distfiles(unsigned int const, char const ** const, char *const);
+char update_last_end_time(PGconn *, char const * const);
 
 #endif
 
