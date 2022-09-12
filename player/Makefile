@@ -8,7 +8,7 @@ PQ_CFLAGS?=-I /usr/include/postgresql
 PQ_LDFLAGS?=-L /usr/lib/postgresql -lpq
 SOX_PLAY_PATH?='"/usr/bin/play"'
 
-PROGS=player_import player_mkdist player
+PROGS=player_import player
 SCRIPTS=find_music find_videos player_init_db shuffler
 SQL=despool.plpgsql import_upsert.plpgsql
 MAN1=player_init_db.1 shuffler.1
@@ -25,21 +25,18 @@ clean:
 player_import: import.c ../sha1_of_file.c
 	cc $(CFLAGS) -o $@ import.c ../sha1_of_file.c $(PQ_CFLAGS) $(PQ_LDFLAGS) -lcrypto -lavformat
 
-player_mkdist: mkdist.c
-	cc -o $@ $< $(CPPFLAGS) $(CFLAGS) $(PQ_CFLAGS) $(LDFLAGS) $(PQ_LDFLAGS) -lm -lpopularity
-
 player: player.c enspool.c enspool.h pglisten.c
 	cc -o $@ -DSOX_PLAY_PATH=$(SOX_PLAY_PATH) player.c enspool.c pglisten.c $(CPPFLAGS) $(CFLAGS) $(PQ_CFLAGS) $(LDFLAGS) $(PQ_LDFLAGS) -lm -lpopularity -lpthread -lpq
 
 install:
 	for prog in $(PROGS) $(SCRIPTS); do install -m 0755 $$prog /usr/local/bin/popularity_$$prog; done
-	mkdir -p /usr/local/share/popularity/player/doc
+	install -d /usr/local/share/popularity/player/doc
 	for doc in README; do install -m 0644 $$doc /usr/local/share/popularity/player/doc/$$doc; done
-	cp -a schema /usr/local/share/popularity/player/
-	mkdir -p /usr/local/share/popularity/player/sql
-	for file in $(SQL); do install -m 0644 sql/$$file /usr/local/share/popularity/player/sql/$$file; done
-	mkdir -p $(MAN_PATH)/man1
-	mkdir -p $(MAN_PATH)/man7
+	install -m 0644 -D -t /usr/local/share/popularity/player/tables tables/*
+	install -m 0644 -D -t /usr/local/share/popularity/player/sql sql/*
+	#for file in $(SQL); do install -m 0644 sql/$$file /usr/local/share/popularity/player/sql/$$file; done
+	install -d $(MAN_PATH)/man1
+	install -d $(MAN_PATH)/man7
 	install -m 0644 player.7 $(MAN_PATH)/man7/popularity-player.7
 	for file in $(MAN1); do install -m 0644 $$file $(MAN_PATH)/man1/popularity_$$file; done
 

@@ -33,9 +33,11 @@ char random_from_dist_file (char const * const path, char * const hash) {
 	dist/=sizeof(struct dist_elem);
 	/* binary search - var dist now holds number of elements */
 	high=dist-1;
+	/* unnormalized dists
 	if	(read_density(stream,dist-1,&density))
 		{ AT_ERR; goto e0; }
-	key=random()*density/RAND_MAX;
+	key=random()*density/RAND_MAX; */
+	key=random()*(double)1.0/RAND_MAX; //Dist is normalized now
 	while(high-low>1){
 		midpoint=(high+low)/2;
 		if	(read_density(stream,midpoint,&density))
