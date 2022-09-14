@@ -1,17 +1,16 @@
 include Version.mk
 CFLAGS+=-DVERSION=\"$(VERSION)\"
 
-CFLAGS+=-Wall -g -fstack-protector -ftrapv -O2 -I /usr/local/include -I ..
-LDFLAGS+=-L /usr/local/lib -L ..
+CFLAGS+=-Wall -g -fstack-protector -ftrapv -O2 -I /usr/local/include -I ../common
+LDFLAGS+=-L /usr/local/lib -L ../common
 MAN_PATH?=/usr/local/share/man
 PQ_CFLAGS?=-I /usr/include/postgresql
 PQ_LDFLAGS?=-L /usr/lib/postgresql -lpq
 SOX_PLAY_PATH?='"/usr/bin/play"'
 
 PROGS=player_import player
-SCRIPTS=find_music find_videos player_init_db shuffler
+SCRIPTS=find_music find_videos
 SQL=despool.plpgsql import_upsert.plpgsql
-MAN1=player_init_db.1 shuffler.1
 
 all: $(PROGS)
 
@@ -22,23 +21,16 @@ clean:
 .pgc.c:
 	ecpg $<
 
-player_import: import.c ../sha1_of_file.c
-	cc $(CFLAGS) -o $@ import.c ../sha1_of_file.c $(PQ_CFLAGS) $(PQ_LDFLAGS) -lcrypto -lavformat
+player_import: import.c ../common/sha1_of_file.c
+	cc $(CFLAGS) -o $@ import.c ../common/sha1_of_file.c $(PQ_CFLAGS) $(PQ_LDFLAGS) -lcrypto -lavformat
 
 player: player.c enspool.c enspool.h pglisten.c
 	cc -o $@ -DSOX_PLAY_PATH=$(SOX_PLAY_PATH) player.c enspool.c pglisten.c $(CPPFLAGS) $(CFLAGS) $(PQ_CFLAGS) $(LDFLAGS) $(PQ_LDFLAGS) -lm -lpopularity -lpthread -lpq
 
 install:
-	for prog in $(PROGS) $(SCRIPTS); do install -m 0755 $$prog /usr/local/bin/popularity_$$prog; done
-	install -d /usr/local/share/popularity/player/doc
-	for doc in README; do install -m 0644 $$doc /usr/local/share/popularity/player/doc/$$doc; done
+	for prog in $(PROGS) $(SCRIPTS); do install -m 0755 $$prog /usr/local/bin/popularity_$$prog || exit; done
 	install -m 0644 -D -t /usr/local/share/popularity/player/tables tables/*
 	install -m 0644 -D -t /usr/local/share/popularity/player/sql sql/*
-	#for file in $(SQL); do install -m 0644 sql/$$file /usr/local/share/popularity/player/sql/$$file; done
-	install -d $(MAN_PATH)/man1
-	install -d $(MAN_PATH)/man7
-	install -m 0644 player.7 $(MAN_PATH)/man7/popularity-player.7
-	for file in $(MAN1); do install -m 0644 $$file $(MAN_PATH)/man1/popularity_$$file; done
 
 uninstall:
 	for prog in $(PROGS) $(SCRIPTS); do rm -f /usr/local/bin/popularity_$$prog; done

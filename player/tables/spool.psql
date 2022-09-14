@@ -1,2 +1,3 @@
-CREATE TABLE spool ( hash character(40) NOT NULL, delta integer not null) with oids;
+drop table if exists spool;
+CREATE TABLE spool ( hash character(40) NOT NULL, delta integer not null);
 --IN GOD WE TRVST.

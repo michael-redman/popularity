@@ -1,0 +1,70 @@
+.TH POPULARITY 7
+.SH NAME
+Popularity \- Adaptive music/video/photo shuffler
+.SH DESCRIPTION
+.B Popularity
+is an adaptive music/video/photo shuffler that random-weights selections based on aggregated past requests and skips.
+.SH DATA SETUP
+Create a Postgresql database for your music, videos, whatever. One collection per database (so your music and your photos get separate databases). You may also want to set up a .pgpass file.
+
+Import the tables and stored procedures:
+
+cd /usr/local/share/popularity
+
+cat common/tables/* player/tables/* common/sql/* player/sql/* | psql -h yourhost musicdb
+
+(use "slideshow" instead of "player" if your database is for photos, and whatever your database name is in place of "musicdb".)
+
+Scan your collection into the database:
+
+popularity_find_music /path/to/your/music/library | popularity_player_import 'host=yourhost dbname=musicdb'
+
+(For photos use popularity_slideshow_import instead of popularity_player_import)
+
+Build an initial probability distribution cache file:
+
+mkdir -p ~/.cache/popularity
+
+popularity_mkdist -r ~/.cache/popularity/musicdb.dist 'host=yourhost dbname=musicdb'
+
+(for photos use "-p" instead of "-r")
+
+Set up a cron job to rebuild the cache file:
+
+crontab -e
+
+If necessary on your system, make sure PATH is set in crontab to include /usr/local
+
+PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
+
+Then add a line to rebuild the probability distribution cache file:
+
+@daily	/usr/local/bin/popularity_mkdist -r /tmp/$$ 'host=yourhost dbname=musicdb' && mv /tmp/$$ /home/you/.cache/popularity/musicdb.dist
+
+Now you are all set up!
+
+.SH RUNNING POPULARITY
+popularity_player 'host=yourhost dbname=music' ~/.cache/popularity/music.dist
+
+popularity_slideshow 'host=yourhost dbname=photos' ~/.cache/popularity/photos.dist
+
+To request the currently playing song be played again some time soon:
+
+echo -n r > /tmp/'popularity-host=pg dbname=music.ctl'
+
+(or whatever the path name of the FIFO is for your session)
+
+To kill the currently playing song, "echo -n k", and to quit, "echo -n q".
+
+In the slideshow program the "=" key requests the current photo be shown again soon and the "-" reduces its remaining display time. "q" quits.
+
+.SH "SEE ALSO"
+popularity_clear_dead_paths(1), popularity_print_new_paths(1)
+
+.SH COPYRIGHT
+
+Copyright 2017-2022 Michael Redman <michaelredman@myyahoo.com>
+.PP
+GPL License
+
+.SH IN GOD WE TRVST.

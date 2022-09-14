@@ -1,5 +1,5 @@
-export CFLAGS='-I /usr/local/include -I ../libpopularity'
-export LDFLAGS='-L /usr/local/lib -L ../libpopularity -R /usr/local/lib'
+export CFLAGS='-I /usr/local/include -I ../common/libpopularity'
+export LDFLAGS='-L /usr/local/lib -L ../common/libpopularity -R /usr/local/lib'
 export MAN_PATH=/usr/local/man
 export PQ_CFLAGS='-I /usr/pkg/include'
 export PQ_LDFLAGS='-L /usr/pkg/lib -R /usr/pkg/lib -lpq'

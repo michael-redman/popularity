@@ -2,12 +2,11 @@ POPULARITY
 
 Adaptive media randomplayer for Debian Linux
 
-Copyright 2017-2021 Michael Redman
+Copyright 2017-2022 Michael Redman
 
 GPL License
 
 https://github.com/michael-redman/popularity
-
 
 - Installating Dependencies -
 
@@ -17,42 +16,18 @@ Common: make gcc libssl-dev
 
 Music/Video Shuffler: libpq-dev libavformat-dev sox vlc
 
-Slideshow: libx11-dev libecpg-dev xli
-
+Slideshow: libx11-dev libpq-dev xli
 
 - Installing Popularity -
 
-Make and install both music and photo shufflers: make && sudo make install
+git clone https://github.com/michael-redman/popularity
 
-There are targets in the Makefiles to build the common files, player, and slideshow modules independently if you only want to install one of the two.
+make && sudo make install
 
+will make and install everything (common files module, music/video player module, slideshow module).
 
-- Database Setup -
+- Data Setup -
 
-Create a new Postgres database and load the schema and procedure SQL files in /usr/local/share/popularity/
-
-One database for one "collection". For example music and photos get different databases.
-
-You may also want to set up a .pgpass file.
-
-
-- Probability Distribution Cache Files -
-
-After importing your files you need to use popularity_mkdist to build a cache file of the probability distribution, e.g. "popularity_mkdist music_cache.dist musicdb@dbserver".
-
-Set a cron job to periodically (like daily) rebuild this file.
-
-
-- Running Popularity -
-
-The main commands are popularity_player, e.g. "popularity_player musicdb@dbserver music_cache.dist", and popularity_slideshow, e.g. "popularity_slideshow photosdb@dbserver photos_cache.dist"
-
-(The Slideshow module uses the root window so your desktop or window manager may interfere - you may need to try a simple X session with icewm or 9wm).
-
-
-- Further Documentation -
-
-Documentation for Popularity is in POSIX man pages. Once Popularity is installed, type "man popularity" at the command prompt for the main index page. The manual pages both tell you how to get started using Popularity, and document Popularity's main commands.
-
+See the popularity(7) man page for instructions on setting up a Postgres database to hold your ratings data, importing your music/videos/photos, and setting up the probability distribution cache file.
 
 IN GOD WE TRVST.

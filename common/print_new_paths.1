@@ -4,13 +4,13 @@ popularity_print_new_paths \- Print paths not already in database, as a filter t
 .SH SYNOPSIS
 popularity_print_new_paths libpq_connect_string < null_delimited_path_list
 .SH EXAMPLE
-popularity_find_music /your/collection | popularity_print_new_paths 'host=yourbusiness.popularity.life user=you dbname=yourbusiness' | popularity_import 'host=yourbusiness.popularity.life user=you dbname=yourbusiness'
+popularity_find_music /your/collection | popularity_print_new_paths 'host=yourpghost user=you dbname=yourdb' | popularity_player_import 'host=yourpghost user=you dbname=yourdb'
 .SH DESCRIPTION
 popularity_print_new_paths reads path names on standard input, delimited with nulls, and for each path checks to see if there is a record in the database with that path. If yes, it does nothing. If no, it prints the path to standard output.
 .SH "SEE ALSO"
-popularity(7), popularity_import(1), popularity_clear_dead_paths(1)
+popularity(7), popularity_clear_dead_paths(1)
 .SH COPYRIGHT
-Copyright 2017 Michael Redman <michael.redman.4@gmail.com>
+Copyright 2017-2022 Michael Redman <michaelredman4@myyahoo.com>
 .PP
 GPL License
 .SH IN GOD WE TRVST.

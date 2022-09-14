@@ -2,17 +2,17 @@
 .SH NAME
 popularity_clear_dead_paths \- cleans up database entries for paths that no longer have files at them
 .SH SYNOPSIS
-popularity_rebalance libpq_connect_string
+echo -n /a/dead/path.jpg | popularity_clear_dead_paths libpq_connect_string
 .SH EXAMPLE
 To check all the paths in your database and clean the dead ones:
 .PP
-psql -h yourbusiness.popularity.life -U -Atc "select path from pool where path is not null" yourbusinessdb | tr \\\\n \\\\0 |  popularity_clear_dead_paths 'host=yourbusiness.popularity.life user=you dbname=yourbusinessdb'
+psql -h yourpghost -U you -Atc "select path from pool where path is not null" yourdb | tr \\\\n \\\\0 |  popularity_clear_dead_paths 'host=yourpghost user=you dbname=yourdb'
 .SH DESCRIPTION
 popularity_clear_dead_paths reads path names from stdin, delimited by nulls, and for each path checks if a file exists at the path. If so, it does nothing. If not, it sets to null, that path in the Popularity database, if any record has it.
 .SH "SEE ALSO"
 popularity(7), popularity_import(1), popularity_print_new_paths(1)
 .SH COPYRIGHT
-Copyright 2017 Michael Redman <michael.redman.4@gmail.com>
+Copyright 2017-2022 Michael Redman <michaelredman@myyahoo.com>
 .PP
 GPL License
 .SH IN GOD WE TRVST.
