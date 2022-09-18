@@ -19,5 +19,7 @@ uninstall:
 	cd common && make uninstall
 	cd player && make uninstall
 	cd slideshow && make uninstall
+	rm -rf /usr/local/share/popularity
+	rm -rf /usr/local/share/doc/popularity
 
 #IN GOD WE TRVST.

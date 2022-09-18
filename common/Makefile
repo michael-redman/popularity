@@ -60,8 +60,8 @@ install:
 	install -d /usr/local/share/popularity/common/sql
 	install -m 0644 sql/* /usr/local/share/popularity/common/sql
 	#for file in $(SQL); do install -m 0644 sql/$$file /usr/local/share/popularity/common/sql/$$file; done
-	install -d /usr/local/share/popularity
-	for doc in ../COPYRIGHT ../LICENSE ../README; do install -m 0644 $$doc /usr/local/share/popularity || exit; done
+	install -d /usr/local/share/doc/popularity
+	for doc in ../COPYRIGHT ../LICENSE ../README; do install -m 0644 $$doc /usr/local/share/doc/popularity || exit; done
 	install -d $(MAN_PATH)/man1
 	install -d $(MAN_PATH)/man7
 	for file in $(MAN1); do install -m 0644 $$file $(MAN_PATH)/man1/popularity_$$file || exit; done
@@ -77,6 +77,7 @@ uninstall:
 	rm -f /usr/local/lib/$(LIBPOPULARITY)
 	rm -f /usr/local/include/popularity.h
 	rm -rf /usr/local/share/popularity/common
+	rm -rf /usr/local/share/doc/popularity
 	for file in $(MAN1); do rm -f $(MAN_PATH)/man1/popularity$$file; done
 	rm -f $(MAN_PATH)/man7/popularity.7
 
