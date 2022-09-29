@@ -31,7 +31,8 @@
 extern void * pglisten_f(void *);
 #endif
 
-char hash[2*SHA_DIGEST_LENGTH+1], die_flag=0;
+char hash[2*SHA_DIGEST_LENGTH+1];
+char shutdown_flags=0; //bits 0: shutdown cmd issued, 1: last play finished
 int delta, control_fd, down_votes;
 pid_t player_pid;
 sem_t semaphore;
@@ -50,23 +51,20 @@ void * command_loop(void * arg)
 	pg_conn=PQconnectdb(arg);
 	if      (PQstatus(pg_conn)!=CONNECTION_OK)
 		{ SQLERR; AT; return (void *)1; }
-	while	(!die_flag) {
+	while	(!(shutdown_flags&2)) {
 		sem_wait(&semaphore);
-		if (die_flag) break;
-		do {	read_label:
-			r0=read(control_fd,&c,1);
+		do {	r0=read(control_fd,&c,1);
 			if	(r0<0)
 				{	if	(errno==EINTR||errno==EAGAIN||errno==EWOULDBLOCK)
-						{	if (die_flag) break;
-							//fputs("sleeping...\n",stderr);
+						{	//fputs("sleeping...\n",stderr);
 							//AT;
+							if (shutdown_flags&2) break;
 							sleep(1);
-							goto read_label; }
-					exit_status|=1;
-					perror("read"); AT; goto end;}
-			if (!r0) continue;
+							continue; }
+					perror("read"); AT; exit(EXIT_FAILURE);}
+			if (!r0) { if (shutdown_flags&2) break; sleep(1); continue; }
 			switch(c){
-				case 'q': die_flag=1; break;
+				case 'q': shutdown_flags|=1; break;
 				case 'r':
 					trylock:
 					r1=pthread_mutex_trylock(&mutex);
@@ -74,22 +72,15 @@ void * command_loop(void * arg)
 						{	fputs("sleeping...\n",stderr); AT;
 							sleep(2);
 							goto trylock; }
-					if (r1) {
-						exit_status|=1;
-						AT;
-						die_flag=1;
-						goto end; }
+					if (r1) { AT; exit(EXIT_FAILURE); }
 					if	(enspool(pg_conn,hash))
-						{	exit_status|=1;
-							AT;
-							if	(pthread_mutex_unlock(&mutex))
+						{	AT; exit(EXIT_FAILURE);}
+							/* if	(pthread_mutex_unlock(&mutex))
 								{	perror("pthread_mutex_unlock");
 									AT; }
-							goto end; }
+							goto end; } */
 					if	(pthread_mutex_unlock(&mutex))
-						{	exit_status|=1;
-							perror("pthread_mutex_unlock");
-							AT; goto end; };
+						{ AT; exit(EXIT_FAILURE); };
 					break;
 				case 'k':
 					if	(kill(player_pid,SIGKILL))
@@ -97,9 +88,8 @@ void * command_loop(void * arg)
 					break;
 				default: fprintf(stderr,"unknown command from fifo: %c\n",c); }
 			} while(r0); }
-	end:	PQfinish(pg_conn);
-		return (void *)exit_status; }
-
+	PQfinish(pg_conn);
+	return (void *)exit_status; }
 
 char fetch_counts(PGconn * pg_conn, int * pool_count, int * spool_count){
 	static int pool_count_cache=-1;
@@ -379,8 +369,10 @@ int main(int argc, char** argv){
 		{ AT; r0|=1; goto e4; }
 	#endif
 	do	{	if	(next(pg_conn,argc-2,(char const ** const)&(argv[2])))
-				{ AT; r0|=1; die_flag=1; } }
-		while(!die_flag);
+				{ AT; exit(EXIT_FAILURE); } }
+		while(!(shutdown_flags&1));
+	shutdown_flags|=2;
+	sem_post(&semaphore);
 	#ifdef EXTRA_FEATURES
 	pthread_kill(pglisten_thread,SIGIO); //return value not checked because thread might already be dead on its own
 	if	(pthread_join(pglisten_thread,&r2))
@@ -388,7 +380,6 @@ int main(int argc, char** argv){
 	e4:
 	#endif
 		#ifndef __CYGWIN__
-		pthread_kill(command_loop_thread,SIGIO); //return value not checked because thread might already be dead on its own
 		if	(pthread_join(command_loop_thread,&r2))
 			{ AT; r0|=1;  goto e3; }
 		if (r2!=(void *)0) { AT; r0|=1; }
