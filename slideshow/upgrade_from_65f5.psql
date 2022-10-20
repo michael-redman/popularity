@@ -1,2 +1,0 @@
-alter table pool drop column import_time;
-\i sql/import_upsert.plpgsql

@@ -36,7 +36,6 @@ install:
 	install -m 0644 tables/* /usr/local/share/popularity/slideshow/tables
 	install -d /usr/local/share/popularity/slideshow/sql
 	install -m 0644 sql/* /usr/local/share/popularity/slideshow/sql
-	install -m 0644 upgrade_from_65f5.psql /usr/local/share/popularity/slideshow/
 
 uninstall:
 	for prog in $(PROGS) find_photos; do rm -f /usr/local/bin/popularity_$$prog; done

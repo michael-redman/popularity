@@ -59,6 +59,7 @@ install:
 	install -m 0644 tables/* /usr/local/share/popularity/common/tables
 	install -d /usr/local/share/popularity/common/sql
 	install -m 0644 sql/* /usr/local/share/popularity/common/sql
+	install -m 0644 upgrade_from_9592.psql /usr/local/share/popularity/common/
 	#for file in $(SQL); do install -m 0644 sql/$$file /usr/local/share/popularity/common/sql/$$file; done
 	install -d /usr/local/share/doc/popularity
 	for doc in ../COPYRIGHT ../LICENSE ../README; do install -m 0644 $$doc /usr/local/share/doc/popularity || exit; done

@@ -1,0 +1,2 @@
+alter table tags add primary key (hash,tag);
+--IN GOD WE TRVST.

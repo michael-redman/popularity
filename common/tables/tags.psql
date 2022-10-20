@@ -1,6 +1,7 @@
 drop table if exists tags;
-CREATE TABLE public.tags (
-    hash character(40) NOT NULL,
-    tag text NOT NULL
+CREATE TABLE tags (
+	hash character(40) NOT NULL,
+	tag text NOT NULL,
+	primary key(hash,tag)
 );
 --IN GOD WE TRVST.

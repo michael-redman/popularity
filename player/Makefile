@@ -31,7 +31,6 @@ install:
 	for prog in $(PROGS) $(SCRIPTS); do install -m 0755 $$prog /usr/local/bin/popularity_$$prog || exit; done
 	install -m 0644 -D -t /usr/local/share/popularity/player/tables tables/*
 	install -m 0644 -D -t /usr/local/share/popularity/player/sql sql/*
-	install -m 0644 upgrade_from_65f5.psql /usr/local/share/popularity/player/
 
 uninstall:
 	for prog in $(PROGS) $(SCRIPTS); do rm -f /usr/local/bin/popularity_$$prog; done
