@@ -37,8 +37,8 @@ create or replace function
 				period =
 					- average_age
 					/ ln( (max_amp-1.0)/max_amp );
-			--raise notice '%', 'average_age: ' || average_age;
-			--raise notice '%', 'period: ' || period;
+			--raise notice '%', 'average_age: ' || average_age || 'period: ' || period;
+			lock table pool;
 			SELECT	pool.votes,
 				EXTRACT(EPOCH FROM NOW()-LAST_VOTE_TIME)
                 		INTO popularity, age FROM pool
