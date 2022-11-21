@@ -1,7 +1,7 @@
 drop function if exists post_delta(char(40),real);
 create or replace function
 	post_delta
-	(hash char(40), delta real)
+	(hash char(40), delta double precision)
 	returns void
 	/* eqns approximating decay & votes balanced in "steady state":
 	1 vote = max_votes - max_votes * e(-age / period)
