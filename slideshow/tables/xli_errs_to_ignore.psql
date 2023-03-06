@@ -1,0 +1,4 @@
+create table xli_errs_to_ignore(
+	hash char(40) not null unique,
+	errmsg text not null);
+--IN GOD WE TRVST.

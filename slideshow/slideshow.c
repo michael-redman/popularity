@@ -130,14 +130,15 @@ void handlequeuedevents
 				break;
 			/* case '+': request_from_same_scene(hash); */ }}}
 
-void paint(char * path){
+void paint(PGconn * pg_conn, char * hash, char * path){
 	struct stat st;
 	const int bufsize=1920;
 	char buf[bufsize];
-	int pid,exit_status, stderr_fds[2], stdout_fds[2], fno, extra_bytes;
-	unsigned int before_marker;
+	int pid,exit_status, stderr_fds[2], stdout_fds[2], fno;
 	FILE *xli_stderr, *xli_stdout;
 	static char last_path[PATH_MAX+1]="\0";
+	size_t bytes;
+	PGresult *pg_result;
 	if	(!strcmp(path,last_path))
 		{	fprintf(stderr,
 				"Not repainting repeated image: %s\n",path);
@@ -178,19 +179,25 @@ void paint(char * path){
 	xli_stderr=fdopen(stderr_fds[0],"r");
 	if	(!xli_stderr)
 		{ perror("fdopen"); AT_ERR; exit(EXIT_FAILURE);}
-	do	{	if	(!fgets(buf,bufsize,xli_stderr))
-				{	if	(ferror(xli_stderr))
-						{	perror("fgets"); AT_ERR;
-							exit(EXIT_FAILURE); }
-					break; }
-			if	(fputs(buf,stderr)==EOF)
-				{ perror("fputs"); AT_ERR; exit(EXIT_FAILURE); }
-			if	(	!strcmp(buf,"Premature end of JPEG file\n")
-					|| !strcmp(buf,"Corrupt JPEG data: premature end of data segment\n")
-					|| sscanf(buf,"Corrupt JPEG data: %d extraneous bytes before marker 0x%x\n",&extra_bytes,&before_marker)==2)
-				continue;
-			exit_status|=1;
-		}while(1);
+	bytes=fread(buf,1,bufsize-1,xli_stderr);
+	if	(!bytes)
+		{if	(ferror(xli_stderr))
+			{	perror("fread: "); AT_ERR;
+				exit(EXIT_FAILURE); }
+			else goto cleanup_xli_streams;}
+	buf[bytes]=0;
+	pg_result=PQexecParams(pg_conn,"select errmsg from xli_errs_to_ignore where hash=$1",1,NULL, (char const * const []){ hash }, NULL, NULL, 0);
+	if	(PQresultStatus(pg_result)!=PGRES_TUPLES_OK)
+		{	fputs(PQerrorMessage(pg_conn),stderr); AT_ERR;
+			PQclear(pg_result);
+			exit(EXIT_FAILURE); }
+	if	(!PQntuples(pg_result)||strcmp(buf,PQgetvalue(pg_result,0,0)))
+		{	fputs("Unrecognized xli err:\n",stderr);
+			fputs(buf,stderr);
+			exit(EXIT_FAILURE); }
+	PQclear(pg_result);
+	fputs("Ignored xli err matched with database\n",stderr);
+	cleanup_xli_streams:
 	if	(fclose(xli_stderr))
 		{ perror("fclose"); AT_ERR; exit(EXIT_FAILURE); }
 	if	(close(stdout_fds[1]))
@@ -267,7 +274,7 @@ int main(int argc, char** argv){
 				&display_time,&delta_time,path))
 			{ AT_ERR; return 1; }
 		printf("%g %g %s %s\n",display_time,delta_time,hash,path);
-		paint(path);
+		paint(pg_conn,hash,path);
 		handlequeuedevents(pg_conn,d,hash, &display_time, &delta_time, &dieflag,1);
 		while (display_time>0) {
 			if	(nanosleep(&rqt,&rmt))
