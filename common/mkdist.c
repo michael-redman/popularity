@@ -89,8 +89,8 @@ int main(int argc, char ** argv){
 					{ AT; PQclear(pg_result); exit(EXIT_FAILURE); }
 		PQclear(pg_result);
 		if	(dbtype=='r')
-			node.cumul_density+=r_to_rplus(popularity*length+age/pool_count)/length;  //popularity is up-votes (count, dimensionless), length is play duration (seconds), age is time since last vote (seconds), pool_count is a count, dimensionless.
-			else node.cumul_density+=r_to_rplus(popularity+age/pool_count)/sqrt(set_count); //Stirrer - age is time since last vote - in photos DB popularity is upvote display time so this is dimensionally consistent
+			node.cumul_density+=r_to_rplus(popularity*length+age/pool_count)/length;  //popularity is up-votes (count, dimensionless), length is play duration (seconds), age is time since end of last play (seconds), pool_count is a count, dimensionless.
+			else node.cumul_density+=r_to_rplus(popularity+age/pool_count)/sqrt(set_count); //Age is seconds since end of last display - in photos DB votes is upvote display time in seconds so this is dimensionally consistent
 		if	(fwrite(&node,sizeof(node),1,distfile)!=1)
 			{ perror("fwrite"); AT; exit(EXIT_FAILURE); }
 		n_nodes++; }
